@@ -1,44 +1,107 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useScroll, useSpring, useTransform } from "framer-motion";
 import {
   ArrowUpRight,
+  BookOpen,
   Code2,
+  Download,
   Dribbble,
+  ExternalLink,
   Github,
   Globe2,
   Instagram,
   Linkedin,
   Layers3,
   Mail,
+  MapPin,
   MessageCircle,
   Palette,
   PenTool,
+  Phone,
+  Save,
   Smartphone,
   Sparkle,
   Star,
+  UserRound,
+  X,
 } from "lucide-react";
 
 const HeroScene = lazy(() => import("./HeroScene.jsx"));
 
 const navItems = [
   { label: "About", page: "home", section: "about" },
-  { label: "Skills", page: "home", section: "skills" },
   { label: "Projects", page: "projects" },
   { label: "Reviews", page: "reviews" },
+  { label: "Profile", page: "profile" },
   { label: "Contact", page: "home", section: "contact" },
 ];
 
+const appBasePath = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
+const appAssetBase = import.meta.env.BASE_URL || "/";
+
+function assetHref(path) {
+  return `${appAssetBase}${path.replace(/^\/+/, "")}`;
+}
+
+function stripBasePath(pathname) {
+  if (!appBasePath) return pathname;
+  if (pathname === appBasePath) return "/";
+  if (pathname.startsWith(`${appBasePath}/`)) return pathname.slice(appBasePath.length) || "/";
+  return pathname;
+}
+
+function routePath(page) {
+  if (page === "projects") return "/projects";
+  if (page === "reviews") return "/reviews";
+  if (page === "profile") return "/profile";
+  return "/";
+}
+
+function routeHref(page, section) {
+  const path = routePath(page);
+  const basePath = appBasePath || "";
+  const href = `${basePath}${path}`;
+  return section ? `${href}#${section}` : href;
+}
+
 function getInitialPage() {
   if (typeof window === "undefined") return "home";
-  if (window.location.pathname.startsWith("/projects")) return "projects";
-  if (window.location.pathname.startsWith("/reviews")) return "reviews";
+  const pathname = stripBasePath(window.location.pathname);
+  if (pathname.startsWith("/projects")) return "projects";
+  if (pathname.startsWith("/reviews")) return "reviews";
+  if (pathname.startsWith("/profile")) return "profile";
   return "home";
 }
 
 function pageHref(item) {
-  if (item.page === "projects") return "/projects";
-  if (item.page === "reviews") return "/reviews";
-  return item.section ? `/#${item.section}` : "/";
+  return routeHref(item.page, item.section);
+}
+
+function normalizePage(page) {
+  return page === "projects" || page === "reviews" || page === "profile" ? page : "home";
+}
+
+function afterRoutePaint(callback) {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(callback);
+  });
+}
+
+let smoothScrollRestoreTimer = null;
+
+function temporarilyDisableSmoothScroll(duration = 320) {
+  if (typeof document === "undefined") return;
+
+  if (smoothScrollRestoreTimer) {
+    window.clearTimeout(smoothScrollRestoreTimer);
+  }
+
+  document.documentElement.classList.add("route-changing");
+  smoothScrollRestoreTimer = window.setTimeout(() => {
+    document.documentElement.classList.remove("route-changing");
+    smoothScrollRestoreTimer = null;
+  }, duration);
 }
 
 const skills = [
@@ -98,22 +161,22 @@ const projectCategories = [
     summary: "Landing pages, portfolios, business websites, interactive sections, and responsive builds.",
     projects: [
       {
-        title: "Premium Portfolio Website",
-        type: "Future Web Build",
-        accent: "from-violet-400 to-indigo-500",
-        text: "Showcase responsive website screenshots, live links, and design-to-code breakdowns.",
-      },
-      {
-        title: "Business Landing Page",
-        type: "Future Website",
-        accent: "from-fuchsia-400 to-violet-500",
-        text: "A dedicated space for service pages, brand websites, and conversion-focused UI work.",
-      },
-      {
-        title: "Interactive Web Experience",
-        type: "Future 3D Web",
-        accent: "from-cyan-300 to-purple-500",
-        text: "Use this for immersive web experiments, motion concepts, and Three.js interactions.",
+        title: "LMS Website",
+        header: "Learning Management System",
+        type: "Live Website Project",
+        status: "Repo + Live",
+        accent: "from-violet-400 to-fuchsia-500",
+        text: "A live LMS website with a course-focused header, learning sections, and a polished responsive interface.",
+        description:
+          "This LMS website presents a learning platform experience with a clear header, course-focused messaging, structured content sections, and a responsive layout that can grow into a full education product showcase.",
+        details: [
+          "Modern landing-page header for an LMS brand",
+          "Responsive website structure for desktop and mobile",
+          "Ready for project screenshots, UI breakdowns, and future feature notes",
+        ],
+        previewImage: assetHref("projects/lms-preview.png"),
+        repoUrl: "https://github.com/coderAyon/LMS-Website",
+        liveUrl: "https://coderayon.github.io/LMS-Website/",
       },
     ],
   },
@@ -145,10 +208,43 @@ const projectCategories = [
   },
 ];
 
-const fiverrReviews = Array.from({ length: 11 }, (_, index) => ({
-  image: `/reviews/fiverr-review-${String(index + 1).padStart(2, "0")}.png`,
+const fiverrReviews = Array.from({ length: 10 }, (_, index) => ({
+  image: assetHref(`reviews/fiverr-review-${String(index + 1).padStart(2, "0")}.png`),
   alt: `Fiverr client review screenshot ${index + 1}`,
 }));
+
+const profileStorageKey = "ayon-roy-public-profile";
+const cvAssetUrl = assetHref("profile/ayon-roy-cv.pdf");
+
+const defaultProfile = {
+  name: "Ayon Roy",
+  role: "Computer Science Student / Graphics Designer",
+  address: "Manikganj, Khalpar, Dhaka, Bangladesh",
+  phone: "+880 1630802119",
+  phoneAlt: "+880 1569199502",
+  email: "hello@ayonroy.com",
+  academicProgram: "Computer Science Student",
+  academicFocus: "Graphics design, web interfaces, creative technology, and portfolio projects",
+  academicStatus: "Learning, building, and preparing stronger client-ready case studies",
+  bio: "I create futuristic visual identities and interactive portfolio experiences with a growing computer science foundation.",
+  photoDataUrl: "",
+};
+
+function readSavedProfile() {
+  if (typeof window === "undefined") return defaultProfile;
+
+  try {
+    const saved = window.localStorage.getItem(profileStorageKey);
+    return saved ? { ...defaultProfile, ...JSON.parse(saved) } : defaultProfile;
+  } catch {
+    return defaultProfile;
+  }
+}
+
+function broadcastProfileUpdate(profile) {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent("ayon-profile-updated", { detail: profile }));
+}
 
 function HeroFallback() {
   return (
@@ -171,19 +267,17 @@ function Reveal({ children, delay = 0, className = "" }) {
     <motion.div
       initial={{
         opacity: 0,
-        y: 46,
-        scale: 0.96,
-        filter: "blur(16px)",
+        y: 28,
+        scale: 0.985,
       }}
       whileInView={{
         opacity: 1,
         y: 0,
         scale: 1,
-        filter: "blur(0px)",
       }}
-      viewport={{ once: false, margin: "-10% 0px -10% 0px", amount: 0.18 }}
-      transition={{ duration: 0.82, delay, ease: [0.16, 1, 0.3, 1] }}
-      style={{ willChange: "transform, opacity, filter" }}
+      viewport={{ once: false, margin: "-12% 0px -12% 0px", amount: 0.16 }}
+      transition={{ duration: 0.62, delay, ease: [0.16, 1, 0.3, 1] }}
+      style={{ willChange: "transform, opacity" }}
       className={className}
     >
       {children}
@@ -205,6 +299,26 @@ function SectionLabel({ eyebrow, title, copy }) {
 
 function ChromeNav({ currentPage, onNavigate }) {
   const [open, setOpen] = useState(false);
+  const [navProfile, setNavProfile] = useState(defaultProfile);
+
+  useEffect(() => {
+    setNavProfile(readSavedProfile());
+
+    const handleProfileUpdate = (event) => {
+      setNavProfile(event.detail ?? readSavedProfile());
+    };
+
+    const handleStorage = (event) => {
+      if (event.key === profileStorageKey) setNavProfile(readSavedProfile());
+    };
+
+    window.addEventListener("ayon-profile-updated", handleProfileUpdate);
+    window.addEventListener("storage", handleStorage);
+    return () => {
+      window.removeEventListener("ayon-profile-updated", handleProfileUpdate);
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, []);
 
   return (
     <motion.header
@@ -215,7 +329,7 @@ function ChromeNav({ currentPage, onNavigate }) {
     >
       <nav className="site-nav mx-auto flex max-w-6xl items-center justify-between rounded-full px-4 py-3 sm:px-5">
         <a
-          href="/"
+          href={routeHref("home")}
           className="flex items-center gap-3"
           aria-label="Ayon Roy home"
           onClick={(event) => {
@@ -224,8 +338,8 @@ function ChromeNav({ currentPage, onNavigate }) {
             setOpen(false);
           }}
         >
-          <span className="grid h-9 w-9 place-items-center rounded-full border border-white/12 bg-white/[0.06] text-sm font-black text-frost shadow-aura">
-            AR
+          <span className="nav-avatar" aria-hidden="true">
+            {navProfile.photoDataUrl ? <img src={navProfile.photoDataUrl} alt="" /> : <span>AR</span>}
           </span>
           <span className="hidden font-display text-sm font-semibold uppercase tracking-[0.24em] text-frost sm:block">
             Ayon Roy
@@ -248,7 +362,7 @@ function ChromeNav({ currentPage, onNavigate }) {
         </div>
         <div className="flex items-center gap-2">
           <a
-            href="/#contact"
+            href={routeHref("home", "contact")}
             className="hidden rounded-full bg-frost px-5 py-2.5 text-sm font-bold text-night transition hover:bg-white md:block"
             onClick={(event) => {
               event.preventDefault();
@@ -330,9 +444,9 @@ function Hero({ onNavigate }) {
       <div className="hero-grid pointer-events-none absolute inset-0 opacity-[0.22]" />
       <div className="relative z-10 mx-auto flex min-h-[100svh] max-w-6xl items-center px-5 pb-28 pt-32 sm:px-6 lg:px-8">
         <motion.div
-          initial={{ opacity: 0, y: 38, filter: "blur(14px)" }}
+          initial={{ opacity: 0.72, y: 18, filter: "blur(6px)" }}
           animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-          transition={{ duration: 1.05, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.68, ease: [0.16, 1, 0.3, 1] }}
           className="max-w-4xl"
         >
           <div className="mb-7 inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/[0.045] px-4 py-2 text-sm font-semibold text-white/72 shadow-glass backdrop-blur-xl">
@@ -347,7 +461,7 @@ function Hero({ onNavigate }) {
           </p>
           <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
             <a
-              href="/projects"
+              href={routeHref("projects")}
               className="group inline-flex items-center justify-center gap-3 rounded-full bg-frost px-7 py-4 text-sm font-extrabold uppercase tracking-[0.18em] text-night transition duration-300 hover:-translate-y-1 hover:bg-white"
               onClick={(event) => {
                 event.preventDefault();
@@ -358,7 +472,7 @@ function Hero({ onNavigate }) {
               <ArrowUpRight className="h-4 w-4 transition group-hover:translate-x-1 group-hover:-translate-y-1" />
             </a>
             <a
-              href="/#contact"
+              href={routeHref("home", "contact")}
               className="inline-flex items-center justify-center gap-3 rounded-full border border-white/12 bg-white/[0.045] px-7 py-4 text-sm font-extrabold uppercase tracking-[0.18em] text-frost backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:border-violet-aura/50 hover:bg-white/[0.075]"
               onClick={(event) => {
                 event.preventDefault();
@@ -366,6 +480,17 @@ function Hero({ onNavigate }) {
               }}
             >
               Contact
+            </a>
+            <a
+              href={routeHref("profile")}
+              className="inline-flex items-center justify-center gap-3 rounded-full border border-violet-aura/35 bg-violet-aura/10 px-7 py-4 text-sm font-extrabold uppercase tracking-[0.18em] text-frost shadow-aura backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:border-frost/50 hover:bg-violet-aura/18"
+              onClick={(event) => {
+                event.preventDefault();
+                onNavigate("profile");
+              }}
+            >
+              Visit Profile
+              <UserRound className="h-4 w-4" />
             </a>
           </div>
         </motion.div>
@@ -449,10 +574,22 @@ function Skills() {
   );
 }
 
-function ProjectVisual({ accent, index }) {
+function ProjectVisual({ accent, index, project }) {
   return (
     <div className="project-visual">
       <div className={`absolute inset-x-8 top-8 h-28 rounded-full bg-gradient-to-r ${accent} opacity-60 blur-3xl`} />
+      {project?.header ? (
+        <div className="project-visual-header">
+          <span>{project.status}</span>
+          <strong>{project.header}</strong>
+          <p>{project.title}</p>
+        </div>
+      ) : null}
+      {project?.previewImage ? (
+        <div className="project-visual-preview">
+          <img src={project.previewImage} alt={`${project.title} website preview`} loading="lazy" decoding="async" />
+        </div>
+      ) : null}
       <motion.div
         animate={{ rotate: [0, 4, -3, 0], y: [0, -10, 5, 0] }}
         transition={{ duration: 8 + index, repeat: Infinity, ease: "easeInOut" }}
@@ -470,8 +607,95 @@ function ProjectVisual({ accent, index }) {
   );
 }
 
+function ProjectDetailsModal({ project, onClose }) {
+  useEffect(() => {
+    if (!project) return undefined;
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") onClose();
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [project, onClose]);
+
+  if (!project) return null;
+  if (typeof document === "undefined") return null;
+
+  const modal = (
+    <motion.div
+      className="project-modal"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.24 }}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`${project.title} details`}
+    >
+      <button className="project-modal-backdrop" type="button" aria-label="Close project details" onClick={onClose} />
+      <motion.article
+        initial={{ opacity: 0, y: 34, scale: 0.96, filter: "blur(18px)" }}
+        animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+        exit={{ opacity: 0, y: 22, scale: 0.97, filter: "blur(14px)" }}
+        transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
+        className="project-modal-panel"
+      >
+        <button className="project-modal-close" type="button" onClick={onClose} aria-label="Close project details">
+          <X className="h-5 w-5" />
+        </button>
+        <div className="project-modal-preview">
+          <div className={`absolute inset-0 bg-gradient-to-br ${project.accent} opacity-42 blur-3xl`} />
+          {project.previewImage ? (
+            <div className="project-modal-screenshot">
+              <img src={project.previewImage} alt={`${project.title} live website preview`} />
+            </div>
+          ) : null}
+          <div className="project-modal-preview-caption">
+            <p>{project.type}</p>
+            <h3>{project.header ?? project.title}</h3>
+            <span>{project.title}</span>
+          </div>
+        </div>
+        <div className="project-modal-content">
+          <p className="text-xs font-bold uppercase tracking-[0.36em] text-violet-aura">{project.status ?? "Project Details"}</p>
+          <h2 className="mt-4 font-display text-4xl font-bold leading-tight text-frost sm:text-5xl">{project.title}</h2>
+          <p className="mt-5 text-base leading-8 text-white/66">{project.description ?? project.text}</p>
+          {project.details?.length ? (
+            <ul className="project-detail-list">
+              {project.details.map((detail) => (
+                <li key={detail}>
+                  <Sparkle className="h-4 w-4" />
+                  <span>{detail}</span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          <div className="project-modal-actions">
+            {project.liveUrl ? (
+              <a href={project.liveUrl} target="_blank" rel="noreferrer" className="project-primary-link">
+                View Live
+                <ExternalLink className="h-4 w-4" />
+              </a>
+            ) : null}
+          </div>
+        </div>
+      </motion.article>
+    </motion.div>
+  );
+
+  return createPortal(modal, document.body);
+}
+
 function Projects() {
   const [activeCategoryId, setActiveCategoryId] = useState(projectCategories[0].id);
+  const [selectedProject, setSelectedProject] = useState(null);
   const activeCategory = projectCategories.find((category) => category.id === activeCategoryId) ?? projectCategories[0];
 
   return (
@@ -505,9 +729,9 @@ function Projects() {
           <AnimatePresence mode="wait">
             <motion.p
               key={activeCategory.id}
-              initial={{ opacity: 0, y: 12, filter: "blur(10px)" }}
-              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-              exit={{ opacity: 0, y: -12, filter: "blur(10px)" }}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
               transition={{ duration: 0.36, ease: [0.16, 1, 0.3, 1] }}
               className="mx-auto mt-5 max-w-2xl text-center text-sm font-semibold leading-7 text-white/58"
             >
@@ -518,33 +742,53 @@ function Projects() {
         <AnimatePresence mode="wait">
           <motion.div
             key={activeCategory.id}
-            initial={{ opacity: 0, y: 26, scale: 0.98, filter: "blur(18px)" }}
-            animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
-            exit={{ opacity: 0, y: -20, scale: 0.98, filter: "blur(16px)" }}
-            transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+            initial={{ opacity: 0, y: 22, scale: 0.99 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -16, scale: 0.99 }}
+            transition={{ duration: 0.48, ease: [0.16, 1, 0.3, 1] }}
             className="mt-14 grid gap-6 lg:grid-cols-3"
           >
             {activeCategory.projects.map((project, index) => (
               <motion.article
                 key={project.title}
-                initial={{ opacity: 0, y: 32, filter: "blur(18px)" }}
-                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                transition={{ duration: 0.52, delay: index * 0.08, ease: [0.16, 1, 0.3, 1] }}
+                initial={{ opacity: 0, y: 26 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.46, delay: index * 0.06, ease: [0.16, 1, 0.3, 1] }}
                 whileHover={{ y: -12 }}
                 className="project-card"
               >
-                <ProjectVisual accent={project.accent} index={index} />
+                <ProjectVisual accent={project.accent} index={index} project={project} />
                 <div className="p-6">
                   <p className="text-xs font-bold uppercase tracking-[0.32em] text-violet-aura">{project.type}</p>
                   <h3 className="mt-4 font-display text-2xl font-bold text-frost">{project.title}</h3>
                   <p className="mt-4 leading-7 text-white/58">{project.text}</p>
-                  <button className="mt-7 inline-flex items-center gap-2 text-sm font-bold uppercase tracking-[0.18em] text-frost">
-                    Future Slot <ArrowUpRight className="h-4 w-4" />
-                  </button>
+                  <div className="mt-7 flex flex-wrap items-center gap-3">
+                    <button
+                      type="button"
+                      className="project-mini-button"
+                      onClick={() => setSelectedProject(project)}
+                    >
+                      View Details
+                      <ArrowUpRight className="h-4 w-4" />
+                    </button>
+                    {project.repoUrl ? (
+                      <a href={project.repoUrl} target="_blank" rel="noreferrer" className="project-icon-link" aria-label={`${project.title} GitHub repo`}>
+                        <Github className="h-4 w-4" />
+                      </a>
+                    ) : null}
+                    {project.liveUrl ? (
+                      <a href={project.liveUrl} target="_blank" rel="noreferrer" className="project-icon-link" aria-label={`${project.title} live website`}>
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
+                    ) : null}
+                  </div>
                 </div>
               </motion.article>
             ))}
           </motion.div>
+        </AnimatePresence>
+        <AnimatePresence>
+          {selectedProject ? <ProjectDetailsModal project={selectedProject} onClose={() => setSelectedProject(null)} /> : null}
         </AnimatePresence>
       </div>
     </section>
@@ -566,7 +810,7 @@ function Reviews() {
         <Reveal delay={0.08} className="mx-auto mt-12 max-w-5xl">
           <div className="review-stats">
             {[
-              ["11", "Client Screenshots"],
+              ["10", "Clients Feedback"],
               ["4.8", "Average Rating"],
               ["Fiverr", "Verified Marketplace"],
             ].map(([value, label]) => (
@@ -583,17 +827,17 @@ function Reviews() {
               <motion.article
                 animate={
                   focusedReview === null
-                    ? { opacity: 1, scale: 1, filter: "blur(0px) saturate(1) brightness(1)" }
+                    ? { opacity: 1, scale: 1 }
                     : focusedReview === index
-                      ? { opacity: 1, scale: 1.02, filter: "blur(0px) saturate(1) brightness(1)" }
-                      : { opacity: 0.38, scale: 0.95, filter: "blur(5px) saturate(0.72) brightness(0.72)" }
+                      ? { opacity: 1, scale: 1.018 }
+                      : { opacity: 0.42, scale: 0.965 }
                 }
-                whileHover={{ y: -16, scale: 1.09, rotateX: 1.6, rotateY: index % 2 === 0 ? -1.8 : 1.8 }}
+                whileHover={{ y: -12, scale: 1.055, rotateX: 1, rotateY: index % 2 === 0 ? -1 : 1 }}
                 onHoverStart={() => setFocusedReview(index)}
                 onHoverEnd={() => setFocusedReview(null)}
                 onFocus={() => setFocusedReview(index)}
                 onBlur={() => setFocusedReview(null)}
-                transition={{ type: "spring", stiffness: 240, damping: 20 }}
+                transition={{ type: "spring", stiffness: 220, damping: 24 }}
                 className={`review-proof-card ${focusedReview === index ? "review-proof-card-focused" : ""}`}
                 tabIndex={0}
               >
@@ -683,7 +927,207 @@ function Contact() {
   );
 }
 
-function PageHero({ eyebrow, title, copy, children }) {
+function Profile() {
+  const [profile, setProfile] = useState(defaultProfile);
+  const [draft, setDraft] = useState(defaultProfile);
+  const [editing, setEditing] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    const storedProfile = readSavedProfile();
+    setProfile(storedProfile);
+    setDraft(storedProfile);
+  }, []);
+
+  const updateDraft = (field, value) => {
+    setDraft((current) => ({ ...current, [field]: value }));
+    setSaved(false);
+  };
+
+  const handlePhotoUpload = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const nextProfile = { ...profile, photoDataUrl: reader.result };
+      setProfile(nextProfile);
+      setDraft((current) => ({ ...current, photoDataUrl: reader.result }));
+      setSaved(true);
+
+      try {
+        window.localStorage.setItem(profileStorageKey, JSON.stringify(nextProfile));
+        broadcastProfileUpdate(nextProfile);
+      } catch {
+        setSaved(false);
+      }
+    };
+    reader.readAsDataURL(file);
+    event.target.value = "";
+  };
+
+  const saveProfile = (event) => {
+    event.preventDefault();
+    setProfile(draft);
+    setEditing(false);
+    setSaved(true);
+
+    try {
+      window.localStorage.setItem(profileStorageKey, JSON.stringify(draft));
+      broadcastProfileUpdate(draft);
+    } catch {
+      setSaved(false);
+    }
+  };
+
+  const profileStats = [
+    ["Role", profile.role],
+    ["Address", profile.address],
+    ["Academic", profile.academicProgram],
+  ];
+
+  return (
+    <section id="profile" className="section-wrap profile-section">
+      <div className="section-glow left-[8%] top-16" />
+      <div className="mx-auto max-w-6xl px-5 sm:px-6 lg:px-8">
+        <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
+          <Reveal>
+            <motion.article whileHover={{ y: -10, rotateX: 1.5, rotateY: -1.5 }} className="profile-identity-card">
+              <div className="profile-avatar">
+                {profile.photoDataUrl ? (
+                  <img src={profile.photoDataUrl} alt={`${profile.name} profile`} />
+                ) : (
+                  <span>AR</span>
+                )}
+                <label className="profile-photo-upload">
+                  <input type="file" accept="image/*" onChange={handlePhotoUpload} />
+                  Upload Photo
+                </label>
+              </div>
+              <p className="mt-7 text-xs font-bold uppercase tracking-[0.38em] text-violet-aura">Public Profile</p>
+              <h2 className="mt-4 font-display text-5xl font-bold leading-none text-frost sm:text-6xl">{profile.name}</h2>
+              <p className="mt-5 text-lg leading-8 text-white/68">{profile.bio}</p>
+              <div className="mt-8 grid gap-3">
+                <a href={`tel:${profile.phone.replace(/\s/g, "")}`} className="profile-info-line">
+                  <Phone className="h-5 w-5" />
+                  <span>{profile.phone}</span>
+                </a>
+                <a href={`mailto:${profile.email}`} className="profile-info-line">
+                  <Mail className="h-5 w-5" />
+                  <span>{profile.email}</span>
+                </a>
+                <div className="profile-info-line">
+                  <MapPin className="h-5 w-5" />
+                  <span>{profile.address}</span>
+                </div>
+              </div>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <a href={cvAssetUrl} download="Ayon-Roy-CV.pdf" className="profile-download-button">
+                  <Download className="h-4 w-4" />
+                  Download CV
+                </a>
+                <button
+                  type="button"
+                  className="profile-edit-button"
+                  onClick={() => {
+                    setDraft(profile);
+                    setEditing((value) => !value);
+                    setSaved(false);
+                  }}
+                >
+                  <UserRound className="h-4 w-4" />
+                  {editing ? "Close Editor" : "Edit Profile"}
+                </button>
+              </div>
+            </motion.article>
+          </Reveal>
+
+          <div className="grid gap-5">
+            <Reveal delay={0.08}>
+              <div className="profile-summary-grid">
+                {profileStats.map(([label, value]) => (
+                  <div key={label} className="profile-summary-card">
+                    <p>{label}</p>
+                    <strong>{value}</strong>
+                  </div>
+                ))}
+              </div>
+            </Reveal>
+
+            <Reveal delay={0.14}>
+              <div className="profile-academic-card">
+                <div className="flex items-center gap-3 text-violet-aura">
+                  <BookOpen className="h-5 w-5" />
+                  <p className="text-xs font-bold uppercase tracking-[0.34em]">Academic Information</p>
+                </div>
+                <div className="mt-6 grid gap-4">
+                  {[
+                    ["Program", profile.academicProgram],
+                    ["Focus", profile.academicFocus],
+                    ["Status", profile.academicStatus],
+                  ].map(([label, value]) => (
+                    <div key={label} className="profile-academic-row">
+                      <span>{label}</span>
+                      <p>{value}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </Reveal>
+
+            <AnimatePresence>
+              {editing ? (
+                <motion.form
+                  initial={{ opacity: 0, y: 18 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -12 }}
+                  transition={{ duration: 0.34, ease: [0.16, 1, 0.3, 1] }}
+                  className="profile-editor"
+                  onSubmit={saveProfile}
+                >
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {[
+                      ["name", "Name"],
+                      ["role", "Role"],
+                      ["phone", "Phone"],
+                      ["phoneAlt", "Second Phone"],
+                      ["email", "Email"],
+                      ["address", "Address"],
+                      ["academicProgram", "Academic Program"],
+                      ["academicStatus", "Academic Status"],
+                    ].map(([field, label]) => (
+                      <label key={field} className="profile-field">
+                        <span>{label}</span>
+                        <input value={draft[field]} onChange={(event) => updateDraft(field, event.target.value)} />
+                      </label>
+                    ))}
+                  </div>
+                  <label className="profile-field mt-4">
+                    <span>Academic Focus</span>
+                    <textarea value={draft.academicFocus} onChange={(event) => updateDraft("academicFocus", event.target.value)} rows={3} />
+                  </label>
+                  <label className="profile-field mt-4">
+                    <span>Profile Bio</span>
+                    <textarea value={draft.bio} onChange={(event) => updateDraft("bio", event.target.value)} rows={3} />
+                  </label>
+                  <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <button type="submit" className="profile-download-button">
+                      <Save className="h-4 w-4" />
+                      Save Profile
+                    </button>
+                    {saved ? <p className="text-sm font-semibold text-white/58">Saved in this browser.</p> : null}
+                  </div>
+                </motion.form>
+              ) : null}
+            </AnimatePresence>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function PageHero({ eyebrow, title, copy, titleClassName = "", children }) {
   return (
     <section className="page-hero relative overflow-hidden px-5 pb-16 pt-36 sm:px-6 lg:px-8">
       <div className="absolute inset-0 bg-radial-aura" />
@@ -691,10 +1135,10 @@ function PageHero({ eyebrow, title, copy, children }) {
       <div className="relative z-10 mx-auto max-w-6xl">
         <Reveal>
           <p className="mb-5 text-xs font-semibold uppercase tracking-[0.44em] text-violet-aura">{eyebrow}</p>
-          <h1 className="max-w-5xl text-balance font-display text-5xl font-bold leading-[0.96] text-frost sm:text-7xl lg:text-8xl">
+          <h1 className={`page-hero-title font-display font-bold text-frost ${titleClassName}`}>
             {title}
           </h1>
-          <p className="mt-7 max-w-3xl text-lg leading-8 text-white/66 sm:text-xl">{copy}</p>
+          {copy ? <p className="page-hero-copy mt-7 max-w-3xl text-lg leading-8 text-white/66 sm:text-xl">{copy}</p> : null}
           {children ? <div className="mt-9">{children}</div> : null}
         </Reveal>
       </div>
@@ -781,62 +1225,151 @@ function ReviewsPage({ onNavigate }) {
   );
 }
 
+function ProfilePage({ onNavigate }) {
+  return (
+    <>
+      <PageHero
+        eyebrow="Visit Profile"
+        title="Welcome to Profile"
+        titleClassName="profile-welcome-title"
+      >
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <button
+            className="inline-flex items-center justify-center gap-3 rounded-full bg-frost px-7 py-4 text-sm font-extrabold uppercase tracking-[0.18em] text-night transition hover:-translate-y-1 hover:bg-white"
+            onClick={() => onNavigate("home", "contact")}
+          >
+            Contact Ayon
+            <ArrowUpRight className="h-4 w-4" />
+          </button>
+          <a
+            href={cvAssetUrl}
+            download="Ayon-Roy-CV.pdf"
+            className="inline-flex items-center justify-center gap-3 rounded-full border border-white/14 bg-white/[0.055] px-7 py-4 text-sm font-extrabold uppercase tracking-[0.18em] text-frost backdrop-blur-xl transition hover:-translate-y-1 hover:border-violet-aura/60 hover:bg-white/[0.09]"
+          >
+            Download CV
+            <Download className="h-4 w-4" />
+          </a>
+        </div>
+      </PageHero>
+      <Profile />
+      <PageCTA onNavigate={onNavigate} label="Start a Project" />
+    </>
+  );
+}
+
 export default function App() {
   const [page, setPage] = useState(getInitialPage);
+  const [pendingScroll, setPendingScroll] = useState(null);
+  const [exitCompleteCount, setExitCompleteCount] = useState(0);
+  const activePage = normalizePage(page);
 
   const navigate = (nextPage, section) => {
-    const path = nextPage === "projects" ? "/projects" : nextPage === "reviews" ? "/reviews" : "/";
-    const target = section ? `${path}#${section}` : path;
+    const target = routeHref(nextPage, section);
+    const isRouteChange = normalizePage(page) !== normalizePage(nextPage);
 
     if (window.location.pathname + window.location.hash !== target) {
       window.history.pushState({ page: nextPage, section }, "", target);
     }
 
-    setPage(nextPage);
+    if (isRouteChange) {
+      temporarilyDisableSmoothScroll(1200);
+    }
 
-    requestAnimationFrame(() => {
-      if (section) {
-        document.getElementById(section)?.scrollIntoView({ behavior: "smooth", block: "start" });
-      } else {
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      }
+    setPage(nextPage);
+    setPendingScroll({
+      section,
+      isRouteChange,
+      targetPage: normalizePage(nextPage),
+      startExitCompleteCount: exitCompleteCount,
     });
   };
 
   useEffect(() => {
     const handlePopState = () => {
       const nextPage = getInitialPage();
+      const isRouteChange = normalizePage(page) !== normalizePage(nextPage);
+
+      if (isRouteChange) {
+        temporarilyDisableSmoothScroll(1200);
+      }
+
       setPage(nextPage);
-      requestAnimationFrame(() => {
-        const section = window.location.hash.replace("#", "");
-        if (section && nextPage === "home") {
-          document.getElementById(section)?.scrollIntoView({ behavior: "smooth", block: "start" });
-        } else {
-          window.scrollTo({ top: 0, behavior: "smooth" });
-        }
+      setPendingScroll({
+        section: window.location.hash.replace("#", ""),
+        isRouteChange,
+        targetPage: normalizePage(nextPage),
+        startExitCompleteCount: exitCompleteCount,
       });
     };
 
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, []);
+  }, [exitCompleteCount, page]);
 
-  const activePage = page === "projects" || page === "reviews" ? page : "home";
+  useEffect(() => {
+    if (!pendingScroll) return undefined;
+    if (pendingScroll.isRouteChange) {
+      if (activePage !== pendingScroll.targetPage) return undefined;
+      if (exitCompleteCount <= pendingScroll.startExitCompleteCount) return undefined;
+    }
+
+    const timeoutId = window.setTimeout(
+      () => {
+        afterRoutePaint(() => {
+          const behavior = pendingScroll.isRouteChange ? "auto" : "smooth";
+
+          if (pendingScroll.isRouteChange) {
+            temporarilyDisableSmoothScroll(240);
+          }
+
+          if (pendingScroll.section) {
+            document.getElementById(pendingScroll.section)?.scrollIntoView({ behavior, block: "start" });
+          } else {
+            window.scrollTo({ top: 0, left: 0, behavior });
+          }
+
+          setPendingScroll(null);
+        });
+      },
+      0,
+    );
+
+    return () => window.clearTimeout(timeoutId);
+  }, [activePage, exitCompleteCount, pendingScroll]);
+
+  useEffect(() => {
+    if (activePage !== "home") return undefined;
+    if (pendingScroll) return undefined;
+
+    const section = window.location.hash.replace("#", "");
+    if (!section) return undefined;
+
+    const timeoutId = window.setTimeout(() => {
+      afterRoutePaint(() => {
+        temporarilyDisableSmoothScroll(240);
+        document.getElementById(section)?.scrollIntoView({ behavior: "auto", block: "start" });
+      });
+    }, 420);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [activePage, pendingScroll]);
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-night text-white antialiased">
       <ScrollProgress />
       <ChromeNav currentPage={activePage} onNavigate={navigate} />
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode="wait" initial={false} onExitComplete={() => setExitCompleteCount((value) => value + 1)}>
         <motion.div
+          className="page-transition-layer"
           key={activePage}
-          initial={{ opacity: 0, y: 18, filter: "blur(18px)" }}
-          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-          exit={{ opacity: 0, y: -18, filter: "blur(16px)" }}
-          transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -14 }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
         >
           {activePage === "projects" ? <ProjectsPage onNavigate={navigate} /> : null}
           {activePage === "reviews" ? <ReviewsPage onNavigate={navigate} /> : null}
+          {activePage === "profile" ? <ProfilePage onNavigate={navigate} /> : null}
           {activePage === "home" ? <HomePage onNavigate={navigate} /> : null}
         </motion.div>
       </AnimatePresence>

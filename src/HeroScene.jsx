@@ -11,6 +11,8 @@ import {
   Text3D,
 } from "@react-three/drei";
 
+const fontUrl = `${import.meta.env.BASE_URL || "/"}fonts/helvetiker_regular.typeface.json`;
+
 function GlowMaterial({ color = "#a66bff", emissive = "#6d2cff", opacity = 0.56 }) {
   return (
     <meshStandardMaterial
@@ -137,7 +139,7 @@ function SceneRig() {
             />
           </RoundedBox>
           <Text3D
-            font="/fonts/helvetiker_regular.typeface.json"
+            font={fontUrl}
             size={0.11}
             height={0.01}
             curveSegments={6}
@@ -229,7 +231,7 @@ export default function HeroScene() {
         <SceneRig />
         <Float speed={1.4} rotationIntensity={0.12} floatIntensity={0.36}>
           <Text3D
-            font="/fonts/helvetiker_regular.typeface.json"
+            font={fontUrl}
             size={0.18}
             height={0.015}
             curveSegments={8}
