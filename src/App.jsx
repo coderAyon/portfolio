@@ -230,34 +230,62 @@ const fiverrReviews = Array.from({ length: 10 }, (_, index) => ({
   alt: `Fiverr client review screenshot ${index + 1}`,
 }));
 
+const createGraphicsSamples = ({ id, label, count, folder, prefix, orientation = "landscape" }) =>
+  Array.from({ length: count }, (_, index) => {
+    const number = String(index + 1).padStart(2, "0");
+    return {
+      id: `${id}-${number}`,
+      title: `${label} Work ${number}`,
+      label,
+      number,
+      orientation,
+      image: assetHref(`graphics/${folder}/${prefix}-${number}.jpg`),
+      note: "Portfolio showcase",
+    };
+  });
+
 const graphicsWorkTypes = [
   {
     id: "logo",
     label: "Logo",
     summary: "Logo marks, brand symbols, monograms, and identity concepts ready for client-proof presentation.",
     accent: "from-violet-400 to-fuchsia-500",
+    samples: createGraphicsSamples({
+      id: "logo",
+      label: "Logo",
+      count: 16,
+      folder: "logo",
+      prefix: "logo",
+    }),
   },
   {
     id: "business-card",
     label: "Business card",
     summary: "Business card layouts, print-ready identity pieces, and premium stationery compositions.",
     accent: "from-cyan-300 to-violet-500",
+    samples: createGraphicsSamples({
+      id: "business-card",
+      label: "Business card",
+      count: 10,
+      folder: "business-card",
+      prefix: "business-card",
+    }),
   },
   {
     id: "t-shirt",
     label: "T shirt",
     summary: "T-shirt graphics, apparel mockups, merch visuals, and bold wearable design concepts.",
     accent: "from-fuchsia-400 to-purple-600",
+    samples: createGraphicsSamples({
+      id: "t-shirt",
+      label: "T shirt",
+      count: 8,
+      folder: "t-shirt",
+      prefix: "t-shirt",
+      orientation: "portrait",
+    }),
   },
-].map((category) => ({
-  ...category,
-  samples: Array.from({ length: 20 }, (_, index) => ({
-    id: `${category.id}-${String(index + 1).padStart(2, "0")}`,
-    title: `${category.label} Sample ${String(index + 1).padStart(2, "0")}`,
-    label: category.label,
-    number: String(index + 1).padStart(2, "0"),
-  })),
-}));
+];
 
 const cvAssetUrl = assetHref("profile/ayon-roy-cv.pdf");
 
@@ -792,15 +820,27 @@ function GraphicsSamples() {
               className={`graphics-sample-card ${focusedSample === sample.id ? "graphics-sample-card-focused" : ""}`}
               tabIndex={0}
             >
-              <div className={`graphics-sample-preview bg-gradient-to-br ${activeGraphics.accent}`}>
-                <div className="graphics-sample-orbit" />
-                <div className="graphics-sample-orbit graphics-sample-orbit-two" />
-                <span>{sample.number}</span>
+              <div
+                className={`graphics-sample-preview ${
+                  sample.image
+                    ? `graphics-sample-preview-image ${sample.orientation === "portrait" ? "graphics-sample-preview-portrait" : ""}`
+                    : `bg-gradient-to-br ${activeGraphics.accent}`
+                }`}
+              >
+                {sample.image ? (
+                  <img src={sample.image} alt={sample.title} loading="lazy" decoding="async" />
+                ) : (
+                  <>
+                    <div className="graphics-sample-orbit" />
+                    <div className="graphics-sample-orbit graphics-sample-orbit-two" />
+                    <span>{sample.number}</span>
+                  </>
+                )}
               </div>
               <div className="graphics-sample-meta">
                 <p>{sample.label}</p>
                 <h3>{sample.title}</h3>
-                <span>Image slot ready</span>
+                <span>{sample.note}</span>
               </div>
             </motion.article>
           ))}

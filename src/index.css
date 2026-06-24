@@ -493,6 +493,7 @@ body {
 .graphics-sample-preview {
   position: relative;
   display: grid;
+  aspect-ratio: 16 / 10;
   min-height: 12rem;
   place-items: center;
   overflow: hidden;
@@ -518,6 +519,36 @@ body {
   font-weight: 900;
   color: rgba(255, 255, 255, 0.9);
   text-shadow: 0 0 32px rgba(255, 255, 255, 0.26);
+}
+
+.graphics-sample-preview-image {
+  min-height: 0;
+  padding: 0.28rem;
+  background:
+    linear-gradient(135deg, rgba(245, 235, 255, 0.12), rgba(120, 57, 255, 0.07)),
+    rgba(255, 255, 255, 0.035);
+}
+
+.graphics-sample-preview-image::before {
+  opacity: 0;
+}
+
+.graphics-sample-preview-image img {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 0.74rem;
+  object-fit: cover;
+  object-position: center;
+  box-shadow:
+    0 20px 48px rgba(0, 0, 0, 0.28),
+    0 0 26px rgba(190, 129, 255, 0.16);
+}
+
+.graphics-sample-preview-portrait {
+  aspect-ratio: 4 / 5;
 }
 
 .graphics-sample-orbit {
