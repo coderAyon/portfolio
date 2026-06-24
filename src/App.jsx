@@ -6,8 +6,8 @@ import {
   BookOpen,
   Code2,
   Download,
-  Dribbble,
   ExternalLink,
+  Facebook,
   Github,
   Globe2,
   Instagram,
@@ -19,7 +19,6 @@ import {
   Palette,
   PenTool,
   Phone,
-  Save,
   Smartphone,
   Sparkle,
   Star,
@@ -102,6 +101,24 @@ function temporarilyDisableSmoothScroll(duration = 320) {
     document.documentElement.classList.remove("route-changing");
     smoothScrollRestoreTimer = null;
   }, duration);
+}
+
+function scrollToTopIfNeeded(behavior = "auto") {
+  if (typeof window === "undefined") return;
+  if (Math.abs(window.scrollY) < 2 && Math.abs(window.scrollX) < 2) return;
+  window.scrollTo({ top: 0, left: 0, behavior });
+}
+
+function scrollSectionIntoViewIfNeeded(section, behavior = "auto") {
+  if (typeof document === "undefined" || !section) return;
+
+  const element = document.getElementById(section);
+  if (!element) return;
+
+  const top = element.getBoundingClientRect().top;
+  if (Math.abs(top) < 2) return;
+
+  element.scrollIntoView({ behavior, block: "start" });
 }
 
 const skills = [
@@ -213,7 +230,35 @@ const fiverrReviews = Array.from({ length: 10 }, (_, index) => ({
   alt: `Fiverr client review screenshot ${index + 1}`,
 }));
 
-const profileStorageKey = "ayon-roy-public-profile";
+const graphicsWorkTypes = [
+  {
+    id: "logo",
+    label: "Logo",
+    summary: "Logo marks, brand symbols, monograms, and identity concepts ready for client-proof presentation.",
+    accent: "from-violet-400 to-fuchsia-500",
+  },
+  {
+    id: "business-card",
+    label: "Business card",
+    summary: "Business card layouts, print-ready identity pieces, and premium stationery compositions.",
+    accent: "from-cyan-300 to-violet-500",
+  },
+  {
+    id: "t-shirt",
+    label: "T shirt",
+    summary: "T-shirt graphics, apparel mockups, merch visuals, and bold wearable design concepts.",
+    accent: "from-fuchsia-400 to-purple-600",
+  },
+].map((category) => ({
+  ...category,
+  samples: Array.from({ length: 20 }, (_, index) => ({
+    id: `${category.id}-${String(index + 1).padStart(2, "0")}`,
+    title: `${category.label} Sample ${String(index + 1).padStart(2, "0")}`,
+    label: category.label,
+    number: String(index + 1).padStart(2, "0"),
+  })),
+}));
+
 const cvAssetUrl = assetHref("profile/ayon-roy-cv.pdf");
 
 const defaultProfile = {
@@ -222,23 +267,17 @@ const defaultProfile = {
   address: "Manikganj, Khalpar, Dhaka, Bangladesh",
   phone: "+880 1630802119",
   phoneAlt: "+880 1569199502",
-  email: "hello@ayonroy.com",
+  email: "ayonr169@gmail.com",
   academicProgram: "Computer Science Student",
   academicFocus: "Graphics design, web interfaces, creative technology, and portfolio projects",
   academicStatus: "Learning, building, and preparing stronger client-ready case studies",
   bio: "I create futuristic visual identities and interactive portfolio experiences with a growing computer science foundation.",
+  photoUrl: assetHref("profile/ayon-roy-profile.svg"),
   photoDataUrl: "",
 };
 
 function readSavedProfile() {
-  if (typeof window === "undefined") return defaultProfile;
-
-  try {
-    const saved = window.localStorage.getItem(profileStorageKey);
-    return saved ? { ...defaultProfile, ...JSON.parse(saved) } : defaultProfile;
-  } catch {
-    return defaultProfile;
-  }
+  return defaultProfile;
 }
 
 function broadcastProfileUpdate(profile) {
@@ -308,15 +347,9 @@ function ChromeNav({ currentPage, onNavigate }) {
       setNavProfile(event.detail ?? readSavedProfile());
     };
 
-    const handleStorage = (event) => {
-      if (event.key === profileStorageKey) setNavProfile(readSavedProfile());
-    };
-
     window.addEventListener("ayon-profile-updated", handleProfileUpdate);
-    window.addEventListener("storage", handleStorage);
     return () => {
       window.removeEventListener("ayon-profile-updated", handleProfileUpdate);
-      window.removeEventListener("storage", handleStorage);
     };
   }, []);
 
@@ -339,7 +372,7 @@ function ChromeNav({ currentPage, onNavigate }) {
           }}
         >
           <span className="nav-avatar" aria-hidden="true">
-            {navProfile.photoDataUrl ? <img src={navProfile.photoDataUrl} alt="" /> : <span>AR</span>}
+            {navProfile.photoDataUrl || navProfile.photoUrl ? <img src={navProfile.photoDataUrl || navProfile.photoUrl} alt="" /> : <span>AR</span>}
           </span>
           <span className="hidden font-display text-sm font-semibold uppercase tracking-[0.24em] text-frost sm:block">
             Ayon Roy
@@ -383,7 +416,7 @@ function ChromeNav({ currentPage, onNavigate }) {
             initial={{ opacity: 0, y: -8, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.98 }}
-            className="mx-auto mt-3 grid max-w-6xl gap-1 rounded-3xl border border-white/10 bg-night/90 p-3 shadow-glass backdrop-blur-2xl lg:hidden"
+            className="mx-auto mt-3 grid max-w-6xl gap-1 rounded-3xl border border-white/10 bg-night/95 p-3 shadow-glass lg:hidden"
           >
             {navItems.map((item) => (
               <a
@@ -411,7 +444,7 @@ function ChromeNav({ currentPage, onNavigate }) {
 function Hero({ onNavigate }) {
   const heroRef = useRef(null);
   const [sceneActive, setSceneActive] = useState(true);
-  const { scrollYProgress } = useScroll();
+  const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
   const y = useTransform(scrollYProgress, [0, 0.35], [0, -120]);
   const opacity = useTransform(scrollYProgress, [0, 0.24], [1, 0.25]);
 
@@ -422,7 +455,7 @@ function Hero({ onNavigate }) {
       ([entry]) => {
         setSceneActive(entry.isIntersecting);
       },
-      { rootMargin: "360px 0px" },
+      { rootMargin: "80px 0px" },
     );
 
     observer.observe(heroRef.current);
@@ -430,7 +463,7 @@ function Hero({ onNavigate }) {
   }, []);
 
   return (
-    <section id="home" ref={heroRef} className="relative min-h-[100svh] overflow-hidden bg-night">
+    <section id="home" ref={heroRef} className="relative min-h-[100svh] overflow-clip bg-night">
       <div className="absolute inset-0 bg-radial-aura" />
       <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-night to-transparent" />
       <motion.div style={{ y, opacity }} className="absolute inset-0">
@@ -444,12 +477,12 @@ function Hero({ onNavigate }) {
       <div className="hero-grid pointer-events-none absolute inset-0 opacity-[0.22]" />
       <div className="relative z-10 mx-auto flex min-h-[100svh] max-w-6xl items-center px-5 pb-28 pt-32 sm:px-6 lg:px-8">
         <motion.div
-          initial={{ opacity: 0.72, y: 18, filter: "blur(6px)" }}
-          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+          initial={{ opacity: 0.72, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.68, ease: [0.16, 1, 0.3, 1] }}
           className="max-w-4xl"
         >
-          <div className="mb-7 inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/[0.045] px-4 py-2 text-sm font-semibold text-white/72 shadow-glass backdrop-blur-xl">
+          <div className="mb-7 inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/[0.055] px-4 py-2 text-sm font-semibold text-white/72 shadow-glass">
             <span className="h-2 w-2 rounded-full bg-ion shadow-[0_0_16px_rgba(109,233,255,.9)]" />
             Computer Science Student / Graphics Designer
           </div>
@@ -473,7 +506,7 @@ function Hero({ onNavigate }) {
             </a>
             <a
               href={routeHref("home", "contact")}
-              className="inline-flex items-center justify-center gap-3 rounded-full border border-white/12 bg-white/[0.045] px-7 py-4 text-sm font-extrabold uppercase tracking-[0.18em] text-frost backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:border-violet-aura/50 hover:bg-white/[0.075]"
+              className="inline-flex items-center justify-center gap-3 rounded-full border border-white/12 bg-white/[0.055] px-7 py-4 text-sm font-extrabold uppercase tracking-[0.18em] text-frost transition duration-300 hover:-translate-y-1 hover:border-violet-aura/50 hover:bg-white/[0.085]"
               onClick={(event) => {
                 event.preventDefault();
                 onNavigate("home", "contact");
@@ -483,7 +516,7 @@ function Hero({ onNavigate }) {
             </a>
             <a
               href={routeHref("profile")}
-              className="inline-flex items-center justify-center gap-3 rounded-full border border-violet-aura/35 bg-violet-aura/10 px-7 py-4 text-sm font-extrabold uppercase tracking-[0.18em] text-frost shadow-aura backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:border-frost/50 hover:bg-violet-aura/18"
+              className="inline-flex items-center justify-center gap-3 rounded-full border border-violet-aura/35 bg-violet-aura/12 px-7 py-4 text-sm font-extrabold uppercase tracking-[0.18em] text-frost shadow-aura transition duration-300 hover:-translate-y-1 hover:border-frost/50 hover:bg-violet-aura/20"
               onClick={(event) => {
                 event.preventDefault();
                 onNavigate("profile");
@@ -541,7 +574,7 @@ function About() {
 
 function Skills() {
   return (
-    <section id="skills" className="section-wrap relative overflow-hidden">
+    <section id="skills" className="section-wrap relative overflow-clip">
       <div className="section-glow left-[12%] top-20" />
       <div className="mx-auto max-w-6xl px-5 sm:px-6 lg:px-8">
         <SectionLabel
@@ -593,7 +626,7 @@ function ProjectVisual({ accent, index, project }) {
       <motion.div
         animate={{ rotate: [0, 4, -3, 0], y: [0, -10, 5, 0] }}
         transition={{ duration: 8 + index, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute left-7 top-8 h-28 w-28 rounded-[2rem] border border-white/14 bg-white/[0.08] shadow-aura backdrop-blur-xl"
+        className="absolute left-7 top-8 h-28 w-28 rounded-[2rem] border border-white/14 bg-white/[0.09] shadow-aura"
       />
       <motion.div
         animate={{ rotate: [0, -8, 5, 0], x: [0, 12, -4, 0] }}
@@ -693,6 +726,90 @@ function ProjectDetailsModal({ project, onClose }) {
   return createPortal(modal, document.body);
 }
 
+function GraphicsSamples() {
+  const [activeGraphicsId, setActiveGraphicsId] = useState(graphicsWorkTypes[0].id);
+  const [focusedSample, setFocusedSample] = useState(null);
+  const activeGraphics = graphicsWorkTypes.find((category) => category.id === activeGraphicsId) ?? graphicsWorkTypes[0];
+
+  return (
+    <div className="mt-12">
+      <Reveal className="mx-auto max-w-4xl">
+        <div className="graphics-subtabs" role="tablist" aria-label="Graphics design categories">
+          {graphicsWorkTypes.map((category) => {
+            const active = category.id === activeGraphics.id;
+            return (
+              <button
+                key={category.id}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                className={`graphics-subtab ${active ? "graphics-subtab-active" : ""}`}
+                onClick={() => setActiveGraphicsId(category.id)}
+              >
+                {category.label}
+              </button>
+            );
+          })}
+        </div>
+        <AnimatePresence mode="wait">
+          <motion.p
+            key={activeGraphics.id}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            className="mx-auto mt-5 max-w-2xl text-center text-sm font-semibold leading-7 text-white/58"
+          >
+            {activeGraphics.summary}
+          </motion.p>
+        </AnimatePresence>
+      </Reveal>
+
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeGraphics.id}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -14 }}
+          transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
+          className={`graphics-sample-grid mt-12 ${focusedSample !== null ? "graphics-sample-grid-focused" : ""}`}
+        >
+          {activeGraphics.samples.map((sample, index) => (
+            <motion.article
+              key={sample.id}
+              initial={{ opacity: 0, y: 24 }}
+              animate={{
+                opacity: focusedSample === null || focusedSample === sample.id ? 1 : 0.46,
+                y: 0,
+                scale: focusedSample === sample.id ? 1.025 : focusedSample === null ? 1 : 0.975,
+              }}
+              whileHover={{ y: -10, scale: 1.045 }}
+              onHoverStart={() => setFocusedSample(sample.id)}
+              onHoverEnd={() => setFocusedSample(null)}
+              onFocus={() => setFocusedSample(sample.id)}
+              onBlur={() => setFocusedSample(null)}
+              transition={{ type: "spring", stiffness: 220, damping: 24, delay: focusedSample === null ? (index % 6) * 0.025 : 0 }}
+              className={`graphics-sample-card ${focusedSample === sample.id ? "graphics-sample-card-focused" : ""}`}
+              tabIndex={0}
+            >
+              <div className={`graphics-sample-preview bg-gradient-to-br ${activeGraphics.accent}`}>
+                <div className="graphics-sample-orbit" />
+                <div className="graphics-sample-orbit graphics-sample-orbit-two" />
+                <span>{sample.number}</span>
+              </div>
+              <div className="graphics-sample-meta">
+                <p>{sample.label}</p>
+                <h3>{sample.title}</h3>
+                <span>Image slot ready</span>
+              </div>
+            </motion.article>
+          ))}
+        </motion.div>
+      </AnimatePresence>
+    </div>
+  );
+}
+
 function Projects() {
   const [activeCategoryId, setActiveCategoryId] = useState(projectCategories[0].id);
   const [selectedProject, setSelectedProject] = useState(null);
@@ -739,54 +856,58 @@ function Projects() {
             </motion.p>
           </AnimatePresence>
         </Reveal>
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeCategory.id}
-            initial={{ opacity: 0, y: 22, scale: 0.99 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -16, scale: 0.99 }}
-            transition={{ duration: 0.48, ease: [0.16, 1, 0.3, 1] }}
-            className="mt-14 grid gap-6 lg:grid-cols-3"
-          >
-            {activeCategory.projects.map((project, index) => (
-              <motion.article
-                key={project.title}
-                initial={{ opacity: 0, y: 26 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.46, delay: index * 0.06, ease: [0.16, 1, 0.3, 1] }}
-                whileHover={{ y: -12 }}
-                className="project-card"
-              >
-                <ProjectVisual accent={project.accent} index={index} project={project} />
-                <div className="p-6">
-                  <p className="text-xs font-bold uppercase tracking-[0.32em] text-violet-aura">{project.type}</p>
-                  <h3 className="mt-4 font-display text-2xl font-bold text-frost">{project.title}</h3>
-                  <p className="mt-4 leading-7 text-white/58">{project.text}</p>
-                  <div className="mt-7 flex flex-wrap items-center gap-3">
-                    <button
-                      type="button"
-                      className="project-mini-button"
-                      onClick={() => setSelectedProject(project)}
-                    >
-                      View Details
-                      <ArrowUpRight className="h-4 w-4" />
-                    </button>
-                    {project.repoUrl ? (
-                      <a href={project.repoUrl} target="_blank" rel="noreferrer" className="project-icon-link" aria-label={`${project.title} GitHub repo`}>
-                        <Github className="h-4 w-4" />
-                      </a>
-                    ) : null}
-                    {project.liveUrl ? (
-                      <a href={project.liveUrl} target="_blank" rel="noreferrer" className="project-icon-link" aria-label={`${project.title} live website`}>
-                        <ExternalLink className="h-4 w-4" />
-                      </a>
-                    ) : null}
+        {activeCategory.id === "graphics" ? (
+          <GraphicsSamples />
+        ) : (
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeCategory.id}
+              initial={{ opacity: 0, y: 22, scale: 0.99 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -16, scale: 0.99 }}
+              transition={{ duration: 0.48, ease: [0.16, 1, 0.3, 1] }}
+              className="mt-14 grid gap-6 lg:grid-cols-3"
+            >
+              {activeCategory.projects.map((project, index) => (
+                <motion.article
+                  key={project.title}
+                  initial={{ opacity: 0, y: 26 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.46, delay: index * 0.06, ease: [0.16, 1, 0.3, 1] }}
+                  whileHover={{ y: -12 }}
+                  className="project-card"
+                >
+                  <ProjectVisual accent={project.accent} index={index} project={project} />
+                  <div className="p-6">
+                    <p className="text-xs font-bold uppercase tracking-[0.32em] text-violet-aura">{project.type}</p>
+                    <h3 className="mt-4 font-display text-2xl font-bold text-frost">{project.title}</h3>
+                    <p className="mt-4 leading-7 text-white/58">{project.text}</p>
+                    <div className="mt-7 flex flex-wrap items-center gap-3">
+                      <button
+                        type="button"
+                        className="project-mini-button"
+                        onClick={() => setSelectedProject(project)}
+                      >
+                        View Details
+                        <ArrowUpRight className="h-4 w-4" />
+                      </button>
+                      {project.repoUrl ? (
+                        <a href={project.repoUrl} target="_blank" rel="noreferrer" className="project-icon-link" aria-label={`${project.title} GitHub repo`}>
+                          <Github className="h-4 w-4" />
+                        </a>
+                      ) : null}
+                      {project.liveUrl ? (
+                        <a href={project.liveUrl} target="_blank" rel="noreferrer" className="project-icon-link" aria-label={`${project.title} live website`}>
+                          <ExternalLink className="h-4 w-4" />
+                        </a>
+                      ) : null}
+                    </div>
                   </div>
-                </div>
-              </motion.article>
-            ))}
-          </motion.div>
-        </AnimatePresence>
+                </motion.article>
+              ))}
+            </motion.div>
+          </AnimatePresence>
+        )}
         <AnimatePresence>
           {selectedProject ? <ProjectDetailsModal project={selectedProject} onClose={() => setSelectedProject(null)} /> : null}
         </AnimatePresence>
@@ -799,7 +920,7 @@ function Reviews() {
   const [focusedReview, setFocusedReview] = useState(null);
 
   return (
-    <section id="reviews" className="section-wrap relative overflow-hidden">
+    <section id="reviews" className="section-wrap relative overflow-clip">
       <div className="section-glow right-[8%] top-12" />
       <div className="mx-auto max-w-6xl px-5 sm:px-6 lg:px-8">
         <SectionLabel
@@ -861,12 +982,12 @@ function Reviews() {
 function Contact() {
   const socials = useMemo(
     () => [
-      { label: "GitHub", icon: Github, href: "https://github.com/" },
-      { label: "LinkedIn", icon: Linkedin, href: "https://linkedin.com/" },
-      { label: "Instagram", icon: Instagram, href: "https://instagram.com/" },
-      { label: "Dribbble", icon: Dribbble, href: "https://dribbble.com/" },
-      { label: "Fiverr", icon: Star, href: "https://fiverr.com/" },
-      { label: "Email", icon: Mail, href: "mailto:hello@ayonroy.com" },
+      { label: "GitHub", icon: Github, href: "https://github.com/coderAyon" },
+      { label: "LinkedIn", icon: Linkedin, href: "https://www.linkedin.com/in/ayon-roy-7ab549389/" },
+      { label: "Instagram", icon: Instagram, href: "https://www.instagram.com/ayon_zehen" },
+      { label: "Facebook", icon: Facebook, href: "https://www.facebook.com/profile.php?id=61587760349999" },
+      { label: "Fiverr", icon: Star, href: "https://www.fiverr.com/sam_plus?public_mode=true" },
+      { label: "Email", icon: Mail, href: "mailto:ayonr169@gmail.com" },
     ],
     [],
   );
@@ -888,7 +1009,7 @@ function Contact() {
                 </p>
               </div>
               <div className="grid gap-3">
-                <a href="mailto:hello@ayonroy.com" className="group inline-flex items-center justify-center gap-3 rounded-full bg-frost px-7 py-4 text-sm font-extrabold uppercase tracking-[0.18em] text-night transition hover:bg-white">
+                <a href="mailto:ayonr169@gmail.com" className="group inline-flex items-center justify-center gap-3 rounded-full bg-frost px-7 py-4 text-sm font-extrabold uppercase tracking-[0.18em] text-night transition hover:bg-white">
                   <Mail className="h-4 w-4" />
                   Start a Project
                   <ArrowUpRight className="h-4 w-4 transition group-hover:translate-x-1 group-hover:-translate-y-1" />
@@ -929,56 +1050,11 @@ function Contact() {
 
 function Profile() {
   const [profile, setProfile] = useState(defaultProfile);
-  const [draft, setDraft] = useState(defaultProfile);
-  const [editing, setEditing] = useState(false);
-  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     const storedProfile = readSavedProfile();
     setProfile(storedProfile);
-    setDraft(storedProfile);
   }, []);
-
-  const updateDraft = (field, value) => {
-    setDraft((current) => ({ ...current, [field]: value }));
-    setSaved(false);
-  };
-
-  const handlePhotoUpload = (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      const nextProfile = { ...profile, photoDataUrl: reader.result };
-      setProfile(nextProfile);
-      setDraft((current) => ({ ...current, photoDataUrl: reader.result }));
-      setSaved(true);
-
-      try {
-        window.localStorage.setItem(profileStorageKey, JSON.stringify(nextProfile));
-        broadcastProfileUpdate(nextProfile);
-      } catch {
-        setSaved(false);
-      }
-    };
-    reader.readAsDataURL(file);
-    event.target.value = "";
-  };
-
-  const saveProfile = (event) => {
-    event.preventDefault();
-    setProfile(draft);
-    setEditing(false);
-    setSaved(true);
-
-    try {
-      window.localStorage.setItem(profileStorageKey, JSON.stringify(draft));
-      broadcastProfileUpdate(draft);
-    } catch {
-      setSaved(false);
-    }
-  };
 
   const profileStats = [
     ["Role", profile.role],
@@ -994,15 +1070,11 @@ function Profile() {
           <Reveal>
             <motion.article whileHover={{ y: -10, rotateX: 1.5, rotateY: -1.5 }} className="profile-identity-card">
               <div className="profile-avatar">
-                {profile.photoDataUrl ? (
-                  <img src={profile.photoDataUrl} alt={`${profile.name} profile`} />
+                {profile.photoDataUrl || profile.photoUrl ? (
+                  <img src={profile.photoDataUrl || profile.photoUrl} alt={`${profile.name} profile`} />
                 ) : (
                   <span>AR</span>
                 )}
-                <label className="profile-photo-upload">
-                  <input type="file" accept="image/*" onChange={handlePhotoUpload} />
-                  Upload Photo
-                </label>
               </div>
               <p className="mt-7 text-xs font-bold uppercase tracking-[0.38em] text-violet-aura">Public Profile</p>
               <h2 className="mt-4 font-display text-5xl font-bold leading-none text-frost sm:text-6xl">{profile.name}</h2>
@@ -1026,18 +1098,6 @@ function Profile() {
                   <Download className="h-4 w-4" />
                   Download CV
                 </a>
-                <button
-                  type="button"
-                  className="profile-edit-button"
-                  onClick={() => {
-                    setDraft(profile);
-                    setEditing((value) => !value);
-                    setSaved(false);
-                  }}
-                >
-                  <UserRound className="h-4 w-4" />
-                  {editing ? "Close Editor" : "Edit Profile"}
-                </button>
               </div>
             </motion.article>
           </Reveal>
@@ -1075,51 +1135,6 @@ function Profile() {
               </div>
             </Reveal>
 
-            <AnimatePresence>
-              {editing ? (
-                <motion.form
-                  initial={{ opacity: 0, y: 18 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -12 }}
-                  transition={{ duration: 0.34, ease: [0.16, 1, 0.3, 1] }}
-                  className="profile-editor"
-                  onSubmit={saveProfile}
-                >
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    {[
-                      ["name", "Name"],
-                      ["role", "Role"],
-                      ["phone", "Phone"],
-                      ["phoneAlt", "Second Phone"],
-                      ["email", "Email"],
-                      ["address", "Address"],
-                      ["academicProgram", "Academic Program"],
-                      ["academicStatus", "Academic Status"],
-                    ].map(([field, label]) => (
-                      <label key={field} className="profile-field">
-                        <span>{label}</span>
-                        <input value={draft[field]} onChange={(event) => updateDraft(field, event.target.value)} />
-                      </label>
-                    ))}
-                  </div>
-                  <label className="profile-field mt-4">
-                    <span>Academic Focus</span>
-                    <textarea value={draft.academicFocus} onChange={(event) => updateDraft("academicFocus", event.target.value)} rows={3} />
-                  </label>
-                  <label className="profile-field mt-4">
-                    <span>Profile Bio</span>
-                    <textarea value={draft.bio} onChange={(event) => updateDraft("bio", event.target.value)} rows={3} />
-                  </label>
-                  <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
-                    <button type="submit" className="profile-download-button">
-                      <Save className="h-4 w-4" />
-                      Save Profile
-                    </button>
-                    {saved ? <p className="text-sm font-semibold text-white/58">Saved in this browser.</p> : null}
-                  </div>
-                </motion.form>
-              ) : null}
-            </AnimatePresence>
           </div>
         </div>
       </div>
@@ -1129,7 +1144,7 @@ function Profile() {
 
 function PageHero({ eyebrow, title, copy, titleClassName = "", children }) {
   return (
-    <section className="page-hero relative overflow-hidden px-5 pb-16 pt-36 sm:px-6 lg:px-8">
+    <section className="page-hero relative overflow-clip px-5 pb-16 pt-36 sm:px-6 lg:px-8">
       <div className="absolute inset-0 bg-radial-aura" />
       <div className="page-hero-grid absolute inset-0 opacity-35" />
       <div className="relative z-10 mx-auto max-w-6xl">
@@ -1212,7 +1227,7 @@ function ReviewsPage({ onNavigate }) {
         copy="A focused reviews page for screenshots, buyer quotes, order proof, and polished testimonial storytelling."
       >
         <button
-          className="inline-flex items-center justify-center gap-3 rounded-full border border-white/14 bg-white/[0.055] px-7 py-4 text-sm font-extrabold uppercase tracking-[0.18em] text-frost backdrop-blur-xl transition hover:-translate-y-1 hover:border-violet-aura/60 hover:bg-white/[0.09]"
+          className="inline-flex items-center justify-center gap-3 rounded-full border border-white/14 bg-white/[0.065] px-7 py-4 text-sm font-extrabold uppercase tracking-[0.18em] text-frost transition hover:-translate-y-1 hover:border-violet-aura/60 hover:bg-white/[0.1]"
           onClick={() => onNavigate("projects")}
         >
           View Projects
@@ -1244,7 +1259,7 @@ function ProfilePage({ onNavigate }) {
           <a
             href={cvAssetUrl}
             download="Ayon-Roy-CV.pdf"
-            className="inline-flex items-center justify-center gap-3 rounded-full border border-white/14 bg-white/[0.055] px-7 py-4 text-sm font-extrabold uppercase tracking-[0.18em] text-frost backdrop-blur-xl transition hover:-translate-y-1 hover:border-violet-aura/60 hover:bg-white/[0.09]"
+            className="inline-flex items-center justify-center gap-3 rounded-full border border-white/14 bg-white/[0.065] px-7 py-4 text-sm font-extrabold uppercase tracking-[0.18em] text-frost transition hover:-translate-y-1 hover:border-violet-aura/60 hover:bg-white/[0.1]"
           >
             Download CV
             <Download className="h-4 w-4" />
@@ -1272,7 +1287,8 @@ export default function App() {
     }
 
     if (isRouteChange) {
-      temporarilyDisableSmoothScroll(1200);
+      temporarilyDisableSmoothScroll(760);
+      scrollToTopIfNeeded("auto");
     }
 
     setPage(nextPage);
@@ -1290,7 +1306,8 @@ export default function App() {
       const isRouteChange = normalizePage(page) !== normalizePage(nextPage);
 
       if (isRouteChange) {
-        temporarilyDisableSmoothScroll(1200);
+        temporarilyDisableSmoothScroll(760);
+        scrollToTopIfNeeded("auto");
       }
 
       setPage(nextPage);
@@ -1323,9 +1340,9 @@ export default function App() {
           }
 
           if (pendingScroll.section) {
-            document.getElementById(pendingScroll.section)?.scrollIntoView({ behavior, block: "start" });
+            scrollSectionIntoViewIfNeeded(pendingScroll.section, behavior);
           } else {
-            window.scrollTo({ top: 0, left: 0, behavior });
+            scrollToTopIfNeeded(behavior);
           }
 
           setPendingScroll(null);
@@ -1347,7 +1364,7 @@ export default function App() {
     const timeoutId = window.setTimeout(() => {
       afterRoutePaint(() => {
         temporarilyDisableSmoothScroll(240);
-        document.getElementById(section)?.scrollIntoView({ behavior: "auto", block: "start" });
+        scrollSectionIntoViewIfNeeded(section, "auto");
       });
     }, 420);
 
@@ -1355,17 +1372,17 @@ export default function App() {
   }, [activePage, pendingScroll]);
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-night text-white antialiased">
+    <main className="min-h-screen overflow-x-clip bg-night text-white antialiased">
       <ScrollProgress />
       <ChromeNav currentPage={activePage} onNavigate={navigate} />
       <AnimatePresence mode="wait" initial={false} onExitComplete={() => setExitCompleteCount((value) => value + 1)}>
         <motion.div
           className="page-transition-layer"
           key={activePage}
-          initial={{ opacity: 0, y: 18 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -14 }}
-          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          initial={{ opacity: 0, scale: 0.996 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.998 }}
+          transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
         >
           {activePage === "projects" ? <ProjectsPage onNavigate={navigate} /> : null}
           {activePage === "reviews" ? <ReviewsPage onNavigate={navigate} /> : null}

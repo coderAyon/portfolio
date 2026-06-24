@@ -1,7 +1,6 @@
-import { Suspense, useRef } from "react";
+import { Suspense, useEffect, useRef } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import {
-  ContactShadows,
   Environment,
   Float,
   MeshDistortMaterial,
@@ -75,13 +74,25 @@ function SceneRig() {
   const cards = useRef([]);
   const ribbons = useRef([]);
   const shards = useRef([]);
+  const pointerTarget = useRef({ x: 0, y: 0 });
   const { size } = useThree();
   const isMobile = size.width < 640;
   const basePosition = isMobile ? [0.58, 1.04, 0] : [2.15, 0.02, 0];
   const rigScale = isMobile ? 0.58 : 0.88;
 
-  useFrame(({ pointer, clock }) => {
+  useEffect(() => {
+    const handlePointerMove = (event) => {
+      pointerTarget.current.x = (event.clientX / window.innerWidth) * 2 - 1;
+      pointerTarget.current.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    };
+
+    window.addEventListener("pointermove", handlePointerMove, { passive: true });
+    return () => window.removeEventListener("pointermove", handlePointerMove);
+  }, []);
+
+  useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
+    const pointer = pointerTarget.current;
     if (group.current) {
       group.current.position.x += (basePosition[0] + pointer.x * 0.18 - group.current.position.x) * 0.035;
       group.current.position.y = basePosition[1] + Math.sin(t * 0.55) * 0.07;
@@ -112,9 +123,9 @@ function SceneRig() {
 
   return (
     <group ref={group} position={basePosition} scale={rigScale}>
-      <Float speed={1.12} rotationIntensity={0.14} floatIntensity={0.42}>
+      <Float speed={0.86} rotationIntensity={0.1} floatIntensity={0.3}>
         <group ref={mainPanel}>
-          <RoundedBox args={[2.35, 1.45, 0.075]} radius={0.085} smoothness={10} position={[0, 0, 0]}>
+          <RoundedBox args={[2.35, 1.45, 0.075]} radius={0.085} smoothness={6} position={[0, 0, 0]}>
             <meshStandardMaterial
               color="#12071f"
               emissive="#7c3cff"
@@ -125,7 +136,7 @@ function SceneRig() {
               opacity={0.72}
             />
           </RoundedBox>
-          <RoundedBox args={[2.18, 1.28, 0.025]} radius={0.065} smoothness={8} position={[0, 0, 0.065]}>
+          <RoundedBox args={[2.18, 1.28, 0.025]} radius={0.065} smoothness={5} position={[0, 0, 0.065]}>
             <MeshDistortMaterial
               color="#5c25c9"
               emissive="#8d56ff"
@@ -181,7 +192,7 @@ function SceneRig() {
             rotation={[Math.PI / (2.8 + index), Math.PI / (3.2 + index), index * 0.4]}
             scale={[1, 0.52, 1]}
           >
-            <torusGeometry args={[radius, 0.01, 12, 192]} />
+            <torusGeometry args={[radius, 0.01, 8, 96]} />
             <meshStandardMaterial
               color={index === 0 ? "#9d65ff" : "#6de9ff"}
               emissive={index === 0 ? "#7c3cff" : "#0a7895"}
@@ -213,15 +224,18 @@ function SceneRig() {
           </mesh>
         ))}
       </Float>
-      <Sparkles count={130} speed={0.22} size={3.2} scale={[8.6, 4.8, 4]} color="#cab7ff" opacity={0.7} />
-      <ContactShadows opacity={0.28} blur={2.8} scale={7} position={[0, -2.16, 0]} color="#5d22c8" />
+      <Sparkles count={58} speed={0.16} size={2.7} scale={[8.2, 4.4, 3.5]} color="#cab7ff" opacity={0.58} />
     </group>
   );
 }
 
 export default function HeroScene() {
   return (
-    <Canvas className="hero-canvas" dpr={[1, 1.8]} gl={{ antialias: true, alpha: true }}>
+    <Canvas
+      className="hero-canvas"
+      dpr={[0.75, 1.15]}
+      gl={{ antialias: false, alpha: true, powerPreference: "high-performance" }}
+    >
       <PerspectiveCamera makeDefault position={[0, 0.05, 6]} fov={42} />
       <ambientLight intensity={0.86} />
       <spotLight position={[3.5, 4.5, 4.5]} angle={0.42} penumbra={0.8} intensity={12} color="#a173ff" />
@@ -229,7 +243,7 @@ export default function HeroScene() {
       <pointLight position={[2.6, 0.8, 2.2]} intensity={4.8} color="#d398ff" />
       <Suspense fallback={null}>
         <SceneRig />
-        <Float speed={1.4} rotationIntensity={0.12} floatIntensity={0.36}>
+        <Float speed={0.95} rotationIntensity={0.08} floatIntensity={0.24}>
           <Text3D
             font={fontUrl}
             size={0.18}
