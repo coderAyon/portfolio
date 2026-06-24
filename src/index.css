@@ -290,6 +290,93 @@ body {
     linear-gradient(135deg, rgba(67, 20, 132, 0.38), rgba(22, 6, 47, 0.72));
 }
 
+.review-stats {
+  display: grid;
+  gap: 1rem;
+  border: 1px solid rgba(205, 160, 255, 0.22);
+  border-radius: 1.5rem;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(192, 132, 255, 0.22), transparent 48%),
+    linear-gradient(135deg, rgba(63, 20, 121, 0.36), rgba(255, 255, 255, 0.035));
+  padding: 0.7rem;
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.3),
+    0 0 58px rgba(155, 77, 255, 0.2);
+  backdrop-filter: blur(22px);
+}
+
+.review-stat {
+  border-radius: 1.1rem;
+  background: rgba(255, 255, 255, 0.045);
+  padding: 1.2rem;
+  text-align: center;
+}
+
+.review-stat span {
+  display: block;
+  font-family: "Space Grotesk", Inter, sans-serif;
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  color: #f2edff;
+  text-shadow: 0 0 28px rgba(192, 132, 255, 0.42);
+}
+
+.review-stat p {
+  margin-top: 0.45rem;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.review-proof-grid {
+  columns: 1;
+  column-gap: 1.25rem;
+}
+
+.review-proof-grid > * {
+  break-inside: avoid;
+  margin-bottom: 1.25rem;
+}
+
+.review-proof-card {
+  overflow: hidden;
+  border: 1px solid rgba(205, 160, 255, 0.2);
+  border-radius: 1.35rem;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(192, 132, 255, 0.18), transparent 36%),
+    linear-gradient(145deg, rgba(64, 22, 122, 0.38), rgba(255, 255, 255, 0.035));
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.34),
+    0 0 52px rgba(155, 77, 255, 0.16);
+  padding: 0.8rem;
+  backdrop-filter: blur(22px);
+}
+
+.review-proof-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.35rem 0.35rem 0.8rem;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.review-proof-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 0.95rem;
+  background: #ffffff;
+  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.22);
+}
+
 .page-hero {
   min-height: 72svh;
   background:
@@ -443,6 +530,14 @@ body {
 
   .project-tabs {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .review-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .review-proof-grid {
+    columns: 2;
   }
 }
 

@@ -16,7 +16,6 @@ import {
   MessageCircle,
   Palette,
   PenTool,
-  Quote,
   Smartphone,
   Sparkle,
   Star,
