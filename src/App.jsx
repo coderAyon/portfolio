@@ -1,9 +1,11 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useScroll, useSpring, useTransform } from "framer-motion";
 import {
   ArrowUpRight,
   BookOpen,
+  ChevronLeft,
+  ChevronRight,
   Code2,
   Download,
   ExternalLink,
@@ -25,8 +27,6 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-
-const HeroScene = lazy(() => import("./HeroScene.jsx"));
 
 const navItems = [
   { label: "About", page: "home", section: "about" },
@@ -230,6 +230,8 @@ const fiverrReviews = Array.from({ length: 10 }, (_, index) => ({
   alt: `Fiverr client review screenshot ${index + 1}`,
 }));
 
+const graphicsAssetVersion = "20260625";
+
 const createGraphicsSamples = ({ id, label, count, folder, prefix, orientation = "landscape" }) =>
   Array.from({ length: count }, (_, index) => {
     const number = String(index + 1).padStart(2, "0");
@@ -239,7 +241,7 @@ const createGraphicsSamples = ({ id, label, count, folder, prefix, orientation =
       label,
       number,
       orientation,
-      image: assetHref(`graphics/${folder}/${prefix}-${number}.jpg`),
+      image: assetHref(`graphics/${folder}/${prefix}-${number}.jpg?v=${graphicsAssetVersion}`),
       note: "Portfolio showcase",
     };
   });
@@ -313,16 +315,6 @@ function broadcastProfileUpdate(profile) {
   window.dispatchEvent(new CustomEvent("ayon-profile-updated", { detail: profile }));
 }
 
-function HeroFallback() {
-  return (
-    <div className="hero-fallback" aria-hidden="true">
-      <div />
-      <span />
-      <span />
-    </div>
-  );
-}
-
 function ScrollProgress() {
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, { stiffness: 120, damping: 28, mass: 0.4 });
@@ -344,7 +336,6 @@ function Reveal({ children, delay = 0, className = "" }) {
       }}
       viewport={{ once: false, margin: "-12% 0px -12% 0px", amount: 0.16 }}
       transition={{ duration: 0.62, delay, ease: [0.16, 1, 0.3, 1] }}
-      style={{ willChange: "transform, opacity" }}
       className={className}
     >
       {children}
@@ -469,37 +460,123 @@ function ChromeNav({ currentPage, onNavigate }) {
   );
 }
 
-function Hero({ onNavigate }) {
-  const heroRef = useRef(null);
-  const [sceneActive, setSceneActive] = useState(true);
-  const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
-  const y = useTransform(scrollYProgress, [0, 0.35], [0, -120]);
-  const opacity = useTransform(scrollYProgress, [0, 0.24], [1, 0.25]);
+const heroPhotoVersion = "20260625c";
+const heroCoverPhotos = [2, 1, 6].map((photoNumber, index) => {
+  const number = String(photoNumber).padStart(2, "0");
+  return {
+    src: assetHref(`profile/coverflow/ayon-cover-${number}.jpg?v=${heroPhotoVersion}`),
+    alt: `Ayon Roy portrait ${index + 1}`,
+  };
+});
+
+function coverOffset(index, activeIndex, total) {
+  let offset = index - activeIndex;
+  if (offset > total / 2) offset -= total;
+  if (offset < -total / 2) offset += total;
+  return offset;
+}
+
+function HeroCoverflow({ className = "" }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const total = heroCoverPhotos.length;
 
   useEffect(() => {
-    if (!heroRef.current) return undefined;
+    if (paused) return undefined;
+    const timerId = window.setInterval(() => {
+      setActiveIndex((current) => (current + 1) % total);
+    }, 3200);
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setSceneActive(entry.isIntersecting);
-      },
-      { rootMargin: "80px 0px" },
-    );
+    return () => window.clearInterval(timerId);
+  }, [paused, total]);
 
-    observer.observe(heroRef.current);
-    return () => observer.disconnect();
-  }, []);
+  const goTo = (nextIndex) => {
+    const next = (nextIndex + total) % total;
+    if (next === activeIndex) return;
+
+    setActiveIndex(next);
+  };
+
+  return (
+    <motion.div
+      className={`hero-coverflow-shell ${className}`}
+      initial={{ opacity: 0, x: 34, scale: 0.96 }}
+      animate={{ opacity: 1, x: 0, scale: 1 }}
+      transition={{ duration: 0.78, ease: [0.16, 1, 0.3, 1] }}
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onFocus={() => setPaused(true)}
+      onBlur={() => setPaused(false)}
+    >
+      <div className="hero-coverflow-glow" aria-hidden="true" />
+      <div className="hero-coverflow-orbit hero-coverflow-orbit-one" aria-hidden="true" />
+      <div className="hero-coverflow-orbit hero-coverflow-orbit-two" aria-hidden="true" />
+      <div className="hero-coverflow-stage" aria-label="Ayon Roy photo carousel">
+        {heroCoverPhotos.map((photo, index) => {
+          const offset = coverOffset(index, activeIndex, total);
+          const distance = Math.abs(offset);
+          const isActive = offset === 0;
+          const x = offset * 82;
+          const y = isActive ? -10 : distance * 8;
+          const scale = Math.max(0.74, 1 - distance * 0.12);
+          const rotateY = offset * -28;
+          const opacity = distance > 2 ? 0 : 1 - distance * 0.18;
+
+          return (
+            <button
+              key={photo.src}
+              type="button"
+              className={`hero-cover-card ${isActive ? "hero-cover-card-active" : ""}`}
+              style={{
+                zIndex: 20 - distance,
+                opacity,
+                transform: `translate3d(calc(-50% + ${x}px), calc(-50% + ${y}px), ${distance * -72}px) rotateY(${rotateY}deg) scale(${scale})`,
+              }}
+              aria-label={`Show photo ${index + 1}`}
+              onClick={() => goTo(index)}
+              tabIndex={isActive ? 0 : -1}
+            >
+              <img src={photo.src} alt={photo.alt} loading={index < 2 ? "eager" : "lazy"} decoding="async" />
+              <span className="hero-cover-card-shine" />
+            </button>
+          );
+        })}
+      </div>
+
+      <button type="button" className="hero-coverflow-arrow hero-coverflow-arrow-left" aria-label="Previous photo" onClick={() => goTo(activeIndex - 1)}>
+        <ChevronLeft className="h-5 w-5" />
+      </button>
+      <button type="button" className="hero-coverflow-arrow hero-coverflow-arrow-right" aria-label="Next photo" onClick={() => goTo(activeIndex + 1)}>
+        <ChevronRight className="h-5 w-5" />
+      </button>
+
+      <div className="hero-coverflow-dots" aria-label="Photo carousel navigation">
+        {heroCoverPhotos.map((photo, index) => (
+          <button
+            key={`${photo.src}-dot`}
+            type="button"
+            className={index === activeIndex ? "hero-coverflow-dot-active" : ""}
+            aria-label={`Go to photo ${index + 1}`}
+            onClick={() => goTo(index)}
+          />
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
+function Hero({ onNavigate }) {
+  const heroRef = useRef(null);
+  const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
+  const y = useTransform(scrollYProgress, [0, 0.35], [0, -84]);
+  const opacity = useTransform(scrollYProgress, [0, 0.24], [1, 0.25]);
 
   return (
     <section id="home" ref={heroRef} className="relative min-h-[100svh] overflow-clip bg-night">
       <div className="absolute inset-0 bg-radial-aura" />
       <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-night to-transparent" />
       <motion.div style={{ y, opacity }} className="absolute inset-0">
-        {sceneActive ? (
-          <Suspense fallback={<HeroFallback />}>
-            <HeroScene />
-          </Suspense>
-        ) : null}
+        <HeroCoverflow className="hero-coverflow-desktop" />
       </motion.div>
       <div className="hero-readability absolute inset-0" />
       <div className="hero-grid pointer-events-none absolute inset-0 opacity-[0.22]" />
@@ -508,7 +585,7 @@ function Hero({ onNavigate }) {
           initial={{ opacity: 0.72, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.68, ease: [0.16, 1, 0.3, 1] }}
-          className="max-w-4xl"
+          className="hero-copy-block max-w-4xl"
         >
           <div className="mb-7 inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/[0.055] px-4 py-2 text-sm font-semibold text-white/72 shadow-glass">
             <span className="h-2 w-2 rounded-full bg-ion shadow-[0_0_16px_rgba(109,233,255,.9)]" />
@@ -554,6 +631,7 @@ function Hero({ onNavigate }) {
               <UserRound className="h-4 w-4" />
             </a>
           </div>
+          <HeroCoverflow className="hero-coverflow-mobile" />
         </motion.div>
       </div>
       <div className="absolute bottom-0 left-0 right-0 z-10 h-32 bg-gradient-to-t from-night via-night/72 to-transparent" />
@@ -756,7 +834,6 @@ function ProjectDetailsModal({ project, onClose }) {
 
 function GraphicsSamples() {
   const [activeGraphicsId, setActiveGraphicsId] = useState(graphicsWorkTypes[0].id);
-  const [focusedSample, setFocusedSample] = useState(null);
   const activeGraphics = graphicsWorkTypes.find((category) => category.id === activeGraphicsId) ?? graphicsWorkTypes[0];
 
   return (
@@ -799,25 +876,14 @@ function GraphicsSamples() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -14 }}
-          transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
-          className={`graphics-sample-grid mt-12 ${focusedSample !== null ? "graphics-sample-grid-focused" : ""}`}
+          transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+          className="graphics-sample-grid mt-12"
         >
           {activeGraphics.samples.map((sample, index) => (
-            <motion.article
+            <article
               key={sample.id}
-              initial={{ opacity: 0, y: 24 }}
-              animate={{
-                opacity: focusedSample === null || focusedSample === sample.id ? 1 : 0.46,
-                y: 0,
-                scale: focusedSample === sample.id ? 1.025 : focusedSample === null ? 1 : 0.975,
-              }}
-              whileHover={{ y: -10, scale: 1.045 }}
-              onHoverStart={() => setFocusedSample(sample.id)}
-              onHoverEnd={() => setFocusedSample(null)}
-              onFocus={() => setFocusedSample(sample.id)}
-              onBlur={() => setFocusedSample(null)}
-              transition={{ type: "spring", stiffness: 220, damping: 24, delay: focusedSample === null ? (index % 6) * 0.025 : 0 }}
-              className={`graphics-sample-card ${focusedSample === sample.id ? "graphics-sample-card-focused" : ""}`}
+              className="graphics-sample-card"
+              style={{ "--sample-delay": `${Math.min(index, 8) * 26}ms` }}
               tabIndex={0}
             >
               <div
@@ -828,7 +894,14 @@ function GraphicsSamples() {
                 }`}
               >
                 {sample.image ? (
-                  <img src={sample.image} alt={sample.title} loading="lazy" decoding="async" />
+                  <img
+                    src={sample.image}
+                    alt={sample.title}
+                    loading={index < 3 ? "eager" : "lazy"}
+                    decoding="async"
+                    fetchpriority={index < 3 ? "high" : "low"}
+                    sizes="(min-width: 1024px) 31vw, (min-width: 768px) 48vw, 92vw"
+                  />
                 ) : (
                   <>
                     <div className="graphics-sample-orbit" />
@@ -842,7 +915,7 @@ function GraphicsSamples() {
                 <h3>{sample.title}</h3>
                 <span>{sample.note}</span>
               </div>
-            </motion.article>
+            </article>
           ))}
         </motion.div>
       </AnimatePresence>
