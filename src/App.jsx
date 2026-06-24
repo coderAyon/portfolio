@@ -1,12 +1,9 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useScroll, useSpring, useTransform } from "framer-motion";
 import {
   ArrowUpRight,
-  BadgeCheck,
-  BriefcaseBusiness,
   Code2,
   Dribbble,
-  GraduationCap,
   Github,
   Globe2,
   Instagram,
@@ -28,7 +25,6 @@ const navItems = [
   { label: "Skills", page: "home", section: "skills" },
   { label: "Projects", page: "projects" },
   { label: "Reviews", page: "reviews" },
-  { label: "Timeline", page: "home", section: "timeline" },
   { label: "Contact", page: "home", section: "contact" },
 ];
 
@@ -154,27 +150,6 @@ const fiverrReviews = Array.from({ length: 11 }, (_, index) => ({
   alt: `Fiverr client review screenshot ${index + 1}`,
 }));
 
-const timeline = [
-  {
-    year: "Now",
-    title: "Computer Science Student",
-    detail: "Building a strong foundation in software thinking while sharpening a creative design practice.",
-    icon: GraduationCap,
-  },
-  {
-    year: "Creative Track",
-    title: "Graphics Design",
-    detail: "Focused on memorable visual systems, polished layouts, and strong first-impression design.",
-    icon: BriefcaseBusiness,
-  },
-  {
-    year: "Next",
-    title: "Portfolio Projects",
-    detail: "Ready to showcase future design images, client work, Fiverr reviews, and case-study stories.",
-    icon: BadgeCheck,
-  },
-];
-
 function HeroFallback() {
   return (
     <div className="hero-fallback" aria-hidden="true">
@@ -198,18 +173,17 @@ function Reveal({ children, delay = 0, className = "" }) {
         opacity: 0,
         y: 46,
         scale: 0.96,
-        filter: "blur(22px)",
-        boxShadow: "0 34px 120px rgba(124, 60, 255, 0.2)",
+        filter: "blur(16px)",
       }}
       whileInView={{
         opacity: 1,
         y: 0,
         scale: 1,
         filter: "blur(0px)",
-        boxShadow: "0 0 0 rgba(124, 60, 255, 0)",
       }}
-      viewport={{ once: true, margin: "-12% 0px" }}
-      transition={{ duration: 0.95, delay, ease: [0.16, 1, 0.3, 1] }}
+      viewport={{ once: false, margin: "-10% 0px -10% 0px", amount: 0.18 }}
+      transition={{ duration: 0.82, delay, ease: [0.16, 1, 0.3, 1] }}
+      style={{ willChange: "transform, opacity, filter" }}
       className={className}
     >
       {children}
@@ -239,7 +213,7 @@ function ChromeNav({ currentPage, onNavigate }) {
       transition={{ duration: 0.8, ease: "easeOut" }}
       className="fixed left-0 right-0 top-4 z-40 px-4 sm:top-6"
     >
-      <nav className="mx-auto flex max-w-6xl items-center justify-between rounded-full border border-white/10 bg-night/58 px-4 py-3 shadow-glass backdrop-blur-2xl sm:px-5">
+      <nav className="site-nav mx-auto flex max-w-6xl items-center justify-between rounded-full px-4 py-3 sm:px-5">
         <a
           href="/"
           className="flex items-center gap-3"
@@ -321,18 +295,36 @@ function ChromeNav({ currentPage, onNavigate }) {
 }
 
 function Hero({ onNavigate }) {
+  const heroRef = useRef(null);
+  const [sceneActive, setSceneActive] = useState(true);
   const { scrollYProgress } = useScroll();
   const y = useTransform(scrollYProgress, [0, 0.35], [0, -120]);
   const opacity = useTransform(scrollYProgress, [0, 0.24], [1, 0.25]);
 
+  useEffect(() => {
+    if (!heroRef.current) return undefined;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setSceneActive(entry.isIntersecting);
+      },
+      { rootMargin: "360px 0px" },
+    );
+
+    observer.observe(heroRef.current);
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <section id="home" className="relative min-h-[100svh] overflow-hidden bg-night">
+    <section id="home" ref={heroRef} className="relative min-h-[100svh] overflow-hidden bg-night">
       <div className="absolute inset-0 bg-radial-aura" />
       <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-night to-transparent" />
       <motion.div style={{ y, opacity }} className="absolute inset-0">
-        <Suspense fallback={<HeroFallback />}>
-          <HeroScene />
-        </Suspense>
+        {sceneActive ? (
+          <Suspense fallback={<HeroFallback />}>
+            <HeroScene />
+          </Suspense>
+        ) : null}
       </motion.div>
       <div className="hero-readability absolute inset-0" />
       <div className="hero-grid pointer-events-none absolute inset-0 opacity-[0.22]" />
@@ -560,6 +552,8 @@ function Projects() {
 }
 
 function Reviews() {
+  const [focusedReview, setFocusedReview] = useState(null);
+
   return (
     <section id="reviews" className="section-wrap relative overflow-hidden">
       <div className="section-glow right-[8%] top-12" />
@@ -583,10 +577,26 @@ function Reviews() {
             ))}
           </div>
         </Reveal>
-        <div className="review-proof-grid mt-14">
+        <div className={`review-proof-grid mt-14 ${focusedReview !== null ? "review-proof-grid-focused" : ""}`}>
           {fiverrReviews.map((review, index) => (
             <Reveal key={review.image} delay={(index % 4) * 0.04}>
-              <motion.article whileHover={{ y: -10, scale: 1.01 }} className="review-proof-card">
+              <motion.article
+                animate={
+                  focusedReview === null
+                    ? { opacity: 1, scale: 1, filter: "blur(0px) saturate(1) brightness(1)" }
+                    : focusedReview === index
+                      ? { opacity: 1, scale: 1.02, filter: "blur(0px) saturate(1) brightness(1)" }
+                      : { opacity: 0.38, scale: 0.95, filter: "blur(5px) saturate(0.72) brightness(0.72)" }
+                }
+                whileHover={{ y: -16, scale: 1.09, rotateX: 1.6, rotateY: index % 2 === 0 ? -1.8 : 1.8 }}
+                onHoverStart={() => setFocusedReview(index)}
+                onHoverEnd={() => setFocusedReview(null)}
+                onFocus={() => setFocusedReview(index)}
+                onBlur={() => setFocusedReview(null)}
+                transition={{ type: "spring", stiffness: 240, damping: 20 }}
+                className={`review-proof-card ${focusedReview === index ? "review-proof-card-focused" : ""}`}
+                tabIndex={0}
+              >
                 <div className="review-proof-topline">
                   <span className="inline-flex items-center gap-2">
                     <Star className="h-4 w-4 fill-violet-aura text-violet-aura" />
@@ -598,39 +608,6 @@ function Reviews() {
               </motion.article>
             </Reveal>
           ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function Timeline() {
-  return (
-    <section id="timeline" className="section-wrap">
-      <div className="mx-auto max-w-5xl px-5 sm:px-6 lg:px-8">
-        <SectionLabel
-          eyebrow="Education & Experience"
-          title="A timeline for the student, designer, and future case-study builder."
-        />
-        <div className="relative mt-16">
-          <div className="absolute bottom-0 left-6 top-0 w-px bg-gradient-to-b from-transparent via-white/20 to-transparent md:left-1/2" />
-          {timeline.map((item, index) => {
-            const Icon = item.icon;
-            return (
-              <Reveal key={item.title} delay={index * 0.08}>
-                <div className={`timeline-item ${index % 2 === 0 ? "md:pr-[55%]" : "md:ml-[55%]"}`}>
-                  <div className="timeline-dot">
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <div className="glass-panel p-6">
-                    <p className="text-xs font-bold uppercase tracking-[0.32em] text-violet-aura">{item.year}</p>
-                    <h3 className="mt-3 font-display text-2xl font-bold text-frost">{item.title}</h3>
-                    <p className="mt-4 leading-7 text-white/58">{item.detail}</p>
-                  </div>
-                </div>
-              </Reveal>
-            );
-          })}
         </div>
       </div>
     </section>
@@ -755,7 +732,6 @@ function HomePage({ onNavigate }) {
       <Hero onNavigate={onNavigate} />
       <About />
       <Skills />
-      <Timeline />
       <Contact />
     </>
   );
