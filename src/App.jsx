@@ -4,8 +4,6 @@ import { AnimatePresence, motion, useScroll, useSpring, useTransform } from "fra
 import {
   ArrowUpRight,
   BookOpen,
-  ChevronLeft,
-  ChevronRight,
   Code2,
   Download,
   ExternalLink,
@@ -290,6 +288,7 @@ const graphicsWorkTypes = [
 ];
 
 const cvAssetUrl = assetHref("profile/ayon-roy-cv.pdf");
+const profilePhotoUrl = assetHref("profile/ayon-roy-profile.jpg?v=20260625");
 
 const defaultProfile = {
   name: "Ayon Roy",
@@ -302,7 +301,7 @@ const defaultProfile = {
   academicFocus: "Graphics design, web interfaces, creative technology, and portfolio projects",
   academicStatus: "Learning, building, and preparing stronger client-ready case studies",
   bio: "I create futuristic visual identities and interactive portfolio experiences with a growing computer science foundation.",
-  photoUrl: assetHref("profile/ayon-roy-profile.svg"),
+  photoUrl: profilePhotoUrl,
   photoDataUrl: "",
 };
 
@@ -542,13 +541,6 @@ function HeroCoverflow({ className = "" }) {
           );
         })}
       </div>
-
-      <button type="button" className="hero-coverflow-arrow hero-coverflow-arrow-left" aria-label="Previous photo" onClick={() => goTo(activeIndex - 1)}>
-        <ChevronLeft className="h-5 w-5" />
-      </button>
-      <button type="button" className="hero-coverflow-arrow hero-coverflow-arrow-right" aria-label="Next photo" onClick={() => goTo(activeIndex + 1)}>
-        <ChevronRight className="h-5 w-5" />
-      </button>
 
       <div className="hero-coverflow-dots" aria-label="Photo carousel navigation">
         {heroCoverPhotos.map((photo, index) => (

@@ -233,37 +233,6 @@ body {
   opacity: 0.62;
 }
 
-.hero-coverflow-arrow {
-  position: absolute;
-  top: 50%;
-  z-index: 28;
-  display: grid;
-  height: 2.9rem;
-  width: 2.9rem;
-  place-items: center;
-  border: 1px solid rgba(232, 225, 255, 0.28);
-  border-radius: 999px;
-  background: rgba(16, 7, 31, 0.82);
-  color: #f2edff;
-  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.34), 0 0 28px rgba(155, 77, 255, 0.22);
-  translate: 0 -50%;
-  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
-}
-
-.hero-coverflow-arrow:hover {
-  transform: translateY(-2px);
-  border-color: rgba(232, 225, 255, 0.7);
-  background: rgba(89, 38, 174, 0.74);
-}
-
-.hero-coverflow-arrow-left {
-  left: 0;
-}
-
-.hero-coverflow-arrow-right {
-  right: 0;
-}
-
 .hero-coverflow-dots {
   position: absolute;
   bottom: 1rem;
@@ -1701,12 +1670,6 @@ body {
 
   .hero-coverflow-mobile .hero-cover-card {
     width: clamp(6.9rem, 34vw, 8.1rem);
-  }
-
-  .hero-coverflow-mobile .hero-coverflow-arrow {
-    height: 2.7rem;
-    width: 2.7rem;
-    background: rgba(16, 7, 31, 0.92);
   }
 
   .hero-coverflow-mobile .hero-coverflow-dots {
