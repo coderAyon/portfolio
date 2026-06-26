@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { AnimatePresence, motion, useScroll, useSpring, useTransform } from "framer-motion";
+import { AnimatePresence, motion, useInView, useScroll, useSpring, useTransform } from "framer-motion";
 import {
   ArrowUpRight,
   BookOpen,
@@ -36,9 +36,47 @@ const navItems = [
 
 const appBasePath = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
 const appAssetBase = import.meta.env.BASE_URL || "/";
+const MOBILE_MOTION_QUERY = "(max-width: 767px)";
+const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
+const MotionPreferenceContext = createContext({
+  isMobile: false,
+  prefersReducedMotion: false,
+  reduceMotion: false,
+});
 
 function assetHref(path) {
   return `${appAssetBase}${path.replace(/^\/+/, "")}`;
+}
+
+function getMediaQueryMatch(query) {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
+  return window.matchMedia(query).matches;
+}
+
+function useMediaQuery(query) {
+  const [matches, setMatches] = useState(() => getMediaQueryMatch(query));
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return undefined;
+
+    const mediaQuery = window.matchMedia(query);
+    const handleChange = () => setMatches(mediaQuery.matches);
+    handleChange();
+
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", handleChange);
+      return () => mediaQuery.removeEventListener("change", handleChange);
+    }
+
+    mediaQuery.addListener(handleChange);
+    return () => mediaQuery.removeListener(handleChange);
+  }, [query]);
+
+  return matches;
+}
+
+function useMotionPreferences() {
+  return useContext(MotionPreferenceContext);
 }
 
 function stripBasePath(pathname) {
@@ -314,28 +352,42 @@ function broadcastProfileUpdate(profile) {
   window.dispatchEvent(new CustomEvent("ayon-profile-updated", { detail: profile }));
 }
 
-function ScrollProgress() {
+function AnimatedScrollProgress() {
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, { stiffness: 120, damping: 28, mass: 0.4 });
   return <motion.div className="fixed left-0 top-0 z-50 h-[2px] origin-left bg-frost shadow-[0_0_18px_rgba(157,101,255,.9)]" style={{ scaleX }} />;
 }
 
+function ScrollProgress() {
+  const { reduceMotion } = useMotionPreferences();
+  return reduceMotion ? null : <AnimatedScrollProgress />;
+}
+
 function Reveal({ children, delay = 0, className = "" }) {
+  const { isMobile, reduceMotion } = useMotionPreferences();
+
+  if (reduceMotion) {
+    return <div className={className}>{children}</div>;
+  }
+
+  const revealClassName = ["reveal-motion", className].filter(Boolean).join(" ");
+  const revealDelay = isMobile ? Math.min(delay, 0.08) : delay;
+
   return (
     <motion.div
       initial={{
         opacity: 0,
-        y: 28,
-        scale: 0.985,
+        y: isMobile ? 16 : 28,
+        scale: isMobile ? 0.992 : 0.985,
       }}
       whileInView={{
         opacity: 1,
         y: 0,
         scale: 1,
       }}
-      viewport={{ once: false, margin: "-12% 0px -12% 0px", amount: 0.16 }}
-      transition={{ duration: 0.62, delay, ease: [0.16, 1, 0.3, 1] }}
-      className={className}
+      viewport={{ once: false, margin: isMobile ? "-6% 0px -6% 0px" : "-10% 0px -10% 0px", amount: 0.16 }}
+      transition={{ duration: isMobile ? 0.42 : 0.62, delay: revealDelay, ease: [0.16, 1, 0.3, 1] }}
+      className={revealClassName}
     >
       {children}
     </motion.div>
@@ -357,6 +409,7 @@ function SectionLabel({ eyebrow, title, copy }) {
 function ChromeNav({ currentPage, onNavigate }) {
   const [open, setOpen] = useState(false);
   const [navProfile, setNavProfile] = useState(defaultProfile);
+  const { reduceMotion } = useMotionPreferences();
 
   useEffect(() => {
     setNavProfile(readSavedProfile());
@@ -373,9 +426,9 @@ function ChromeNav({ currentPage, onNavigate }) {
 
   return (
     <motion.header
-      initial={{ opacity: 0, y: -18 }}
+      initial={reduceMotion ? false : { opacity: 0, y: -18 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.8, ease: "easeOut" }}
+      transition={{ duration: reduceMotion ? 0 : 0.8, ease: "easeOut" }}
       className="fixed left-0 right-0 top-4 z-40 px-4 sm:top-6"
     >
       <nav className="site-nav mx-auto flex max-w-6xl items-center justify-between rounded-full px-4 py-3 sm:px-5">
@@ -431,9 +484,10 @@ function ChromeNav({ currentPage, onNavigate }) {
       <AnimatePresence>
         {open ? (
           <motion.div
-            initial={{ opacity: 0, y: -8, scale: 0.98 }}
+            initial={reduceMotion ? false : { opacity: 0, y: -8, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -8, scale: 0.98 }}
+            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -8, scale: 0.98 }}
+            transition={{ duration: reduceMotion ? 0 : 0.2 }}
             className="mx-auto mt-3 grid max-w-6xl gap-1 rounded-3xl border border-white/10 bg-night/95 p-3 shadow-glass lg:hidden"
           >
             {navItems.map((item) => (
@@ -476,18 +530,21 @@ function coverOffset(index, activeIndex, total) {
 }
 
 function HeroCoverflow({ className = "" }) {
+  const shellRef = useRef(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  const { isMobile, reduceMotion } = useMotionPreferences();
+  const isInView = useInView(shellRef, { margin: "160px 0px" });
   const total = heroCoverPhotos.length;
 
   useEffect(() => {
-    if (paused) return undefined;
+    if (paused || reduceMotion || !isInView) return undefined;
     const timerId = window.setInterval(() => {
       setActiveIndex((current) => (current + 1) % total);
     }, 3200);
 
     return () => window.clearInterval(timerId);
-  }, [paused, total]);
+  }, [isInView, paused, reduceMotion, total]);
 
   const goTo = (nextIndex) => {
     const next = (nextIndex + total) % total;
@@ -498,10 +555,11 @@ function HeroCoverflow({ className = "" }) {
 
   return (
     <motion.div
-      className={`hero-coverflow-shell ${className}`}
-      initial={{ opacity: 0, x: 34, scale: 0.96 }}
+      ref={shellRef}
+      className={`hero-coverflow-shell ${reduceMotion ? "hero-coverflow-reduced" : ""} ${className}`}
+      initial={reduceMotion ? false : { opacity: 0, x: 34, scale: 0.96 }}
       animate={{ opacity: 1, x: 0, scale: 1 }}
-      transition={{ duration: 0.78, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: reduceMotion ? 0 : 0.78, ease: [0.16, 1, 0.3, 1] }}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}
@@ -515,10 +573,11 @@ function HeroCoverflow({ className = "" }) {
           const offset = coverOffset(index, activeIndex, total);
           const distance = Math.abs(offset);
           const isActive = offset === 0;
-          const x = offset * 82;
-          const y = isActive ? -10 : distance * 8;
+          const x = offset * (isMobile ? 56 : 82);
+          const y = isActive ? (reduceMotion ? 0 : -10) : distance * (isMobile ? 4 : 8);
           const scale = Math.max(0.74, 1 - distance * 0.12);
-          const rotateY = offset * -28;
+          const rotateY = reduceMotion ? 0 : offset * -28;
+          const depth = reduceMotion ? 0 : distance * -72;
           const opacity = distance > 2 ? 0 : 1 - distance * 0.18;
 
           return (
@@ -529,13 +588,19 @@ function HeroCoverflow({ className = "" }) {
               style={{
                 zIndex: 20 - distance,
                 opacity,
-                transform: `translate3d(calc(-50% + ${x}px), calc(-50% + ${y}px), ${distance * -72}px) rotateY(${rotateY}deg) scale(${scale})`,
+                transform: `translate3d(calc(-50% + ${x}px), calc(-50% + ${y}px), ${depth}px) rotateY(${rotateY}deg) scale(${scale})`,
               }}
               aria-label={`Show photo ${index + 1}`}
               onClick={() => goTo(index)}
               tabIndex={isActive ? 0 : -1}
             >
-              <img src={photo.src} alt={photo.alt} loading={index < 2 ? "eager" : "lazy"} decoding="async" />
+              <img
+                src={photo.src}
+                alt={photo.alt}
+                loading={index === 0 ? "eager" : "lazy"}
+                decoding="async"
+                fetchPriority={index === 0 ? "high" : "low"}
+              />
               <span className="hero-cover-card-shine" />
             </button>
           );
@@ -557,31 +622,44 @@ function HeroCoverflow({ className = "" }) {
   );
 }
 
-function Hero({ onNavigate }) {
-  const heroRef = useRef(null);
+function HeroCoverflowMotionLayer({ heroRef }) {
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
   const y = useTransform(scrollYProgress, [0, 0.35], [0, -84]);
   const opacity = useTransform(scrollYProgress, [0, 0.24], [1, 0.25]);
 
   return (
+    <motion.div style={{ y, opacity }} className="absolute inset-0">
+      <HeroCoverflow className="hero-coverflow-desktop" />
+    </motion.div>
+  );
+}
+
+function Hero({ onNavigate }) {
+  const heroRef = useRef(null);
+  const { isMobile, reduceMotion } = useMotionPreferences();
+
+  return (
     <section id="home" ref={heroRef} className="relative min-h-[100svh] overflow-clip bg-night">
       <div className="absolute inset-0 bg-radial-aura" />
       <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-night to-transparent" />
-      <motion.div style={{ y, opacity }} className="absolute inset-0">
-        <HeroCoverflow className="hero-coverflow-desktop" />
-      </motion.div>
+      {!isMobile && !reduceMotion ? <HeroCoverflowMotionLayer heroRef={heroRef} /> : null}
+      {!isMobile && reduceMotion ? (
+        <div className="absolute inset-0">
+          <HeroCoverflow className="hero-coverflow-desktop" />
+        </div>
+      ) : null}
       <div className="hero-readability absolute inset-0" />
       <div className="hero-grid pointer-events-none absolute inset-0 opacity-[0.22]" />
       <div className="relative z-10 mx-auto flex min-h-[100svh] max-w-6xl items-center px-5 pb-28 pt-32 sm:px-6 lg:px-8">
         <motion.div
-          initial={{ opacity: 0.72, y: 18 }}
+          initial={reduceMotion ? false : { opacity: 0.72, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.68, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: reduceMotion ? 0 : 0.68, ease: [0.16, 1, 0.3, 1] }}
           className="hero-copy-block max-w-4xl"
         >
           <div className="mb-7 inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/[0.055] px-4 py-2 text-sm font-semibold text-white/72 shadow-glass">
-            <span className="h-2 w-2 rounded-full bg-ion shadow-[0_0_16px_rgba(109,233,255,.9)]" />
-            Computer Science Student / Graphics Designer
+            <span className="h-2 w-2 rounded-full bg-[#1dbf73] shadow-[0_0_16px_rgba(29,191,115,.95)]" />
+            Welcome to premium productivity
           </div>
           <h1 className="max-w-5xl text-balance font-display text-6xl font-bold leading-[0.92] text-frost sm:text-7xl md:text-8xl lg:text-[8.8rem]">
             Ayon Roy
@@ -623,7 +701,7 @@ function Hero({ onNavigate }) {
               <UserRound className="h-4 w-4" />
             </a>
           </div>
-          <HeroCoverflow className="hero-coverflow-mobile" />
+          {isMobile ? <HeroCoverflow className="hero-coverflow-mobile" /> : null}
         </motion.div>
       </div>
       <div className="absolute bottom-0 left-0 right-0 z-10 h-32 bg-gradient-to-t from-night via-night/72 to-transparent" />
@@ -645,6 +723,9 @@ function About() {
           <h2 className="font-display text-4xl font-bold leading-tight text-frost sm:text-5xl">
             A designer with a technical mind and a cinematic eye.
           </h2>
+          <p className="mt-8 max-w-2xl font-display text-xl font-bold leading-tight text-frost sm:text-2xl">
+            Studied CSE at Gono Bishwabidyalay.
+          </p>
         </Reveal>
         <Reveal delay={0.12}>
           <div className="glass-panel p-6 sm:p-8">
@@ -671,6 +752,8 @@ function About() {
 }
 
 function Skills() {
+  const { reduceMotion } = useMotionPreferences();
+
   return (
     <section id="skills" className="section-wrap relative overflow-clip">
       <div className="section-glow left-[12%] top-20" />
@@ -686,8 +769,8 @@ function Skills() {
             return (
               <Reveal key={skill.label} delay={index * 0.07}>
                 <motion.article
-                  whileHover={{ y: -10, rotateX: 3, rotateY: -3 }}
-                  transition={{ type: "spring", stiffness: 240, damping: 18 }}
+                  whileHover={reduceMotion ? undefined : { y: -10, rotateX: 3, rotateY: -3 }}
+                  transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 240, damping: 18 }}
                   className="skill-card group"
                 >
                   <div className="mb-8 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] text-violet-aura transition group-hover:border-violet-aura/50 group-hover:text-frost">
@@ -706,39 +789,76 @@ function Skills() {
 }
 
 function ProjectVisual({ accent, index, project }) {
+  const { reduceMotion } = useMotionPreferences();
+  const hasWebsitePreview = Boolean(project?.previewImage);
+  const floatingPanelClassName = "absolute left-7 top-8 h-28 w-28 rounded-[2rem] border border-white/14 bg-white/[0.09] shadow-aura";
+  const floatingOrbClassName = "absolute bottom-7 right-8 h-36 w-36 rounded-full border border-white/12 bg-gradient-to-br from-white/16 to-white/[0.03]";
+
   return (
-    <div className="project-visual">
+    <div className={`project-visual ${hasWebsitePreview ? "project-visual-website" : ""}`}>
       <div className={`absolute inset-x-8 top-8 h-28 rounded-full bg-gradient-to-r ${accent} opacity-60 blur-3xl`} />
-      {project?.header ? (
+      {project?.header && !hasWebsitePreview ? (
         <div className="project-visual-header">
           <span>{project.status}</span>
           <strong>{project.header}</strong>
           <p>{project.title}</p>
         </div>
       ) : null}
-      {project?.previewImage ? (
-        <div className="project-visual-preview">
+      {hasWebsitePreview ? (
+        <>
+        <div className="project-browser-frame">
+          <div className="project-browser-toolbar" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+            <p>Live LMS preview</p>
+          </div>
           <img src={project.previewImage} alt={`${project.title} website preview`} loading="lazy" decoding="async" />
         </div>
+        <div className="project-visual-details">
+          <span>{project.status}</span>
+          <strong>{project.header ?? project.title}</strong>
+          <p>{project.title}</p>
+          <div className="project-visual-tags" aria-hidden="true">
+            <em>Responsive</em>
+            <em>Case Study</em>
+          </div>
+        </div>
+        </>
       ) : null}
-      <motion.div
-        animate={{ rotate: [0, 4, -3, 0], y: [0, -10, 5, 0] }}
-        transition={{ duration: 8 + index, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute left-7 top-8 h-28 w-28 rounded-[2rem] border border-white/14 bg-white/[0.09] shadow-aura"
-      />
-      <motion.div
-        animate={{ rotate: [0, -8, 5, 0], x: [0, 12, -4, 0] }}
-        transition={{ duration: 9 + index, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute bottom-7 right-8 h-36 w-36 rounded-full border border-white/12 bg-gradient-to-br from-white/16 to-white/[0.03]"
-      />
-      <div className="absolute inset-x-10 bottom-10 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
-      <div className="absolute left-1/2 top-1/2 h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/12" />
-      <Sparkle className="absolute right-12 top-12 h-6 w-6 text-frost/70" />
+      {!hasWebsitePreview && (reduceMotion ? (
+        <div className={floatingPanelClassName} />
+      ) : (
+        <motion.div
+          animate={{ rotate: [0, 4, -3, 0], y: [0, -10, 5, 0] }}
+          transition={{ duration: 8 + index, repeat: Infinity, ease: "easeInOut" }}
+          className={floatingPanelClassName}
+        />
+      ))}
+      {!hasWebsitePreview && (reduceMotion ? (
+        <div className={floatingOrbClassName} />
+      ) : (
+        <motion.div
+          animate={{ rotate: [0, -8, 5, 0], x: [0, 12, -4, 0] }}
+          transition={{ duration: 9 + index, repeat: Infinity, ease: "easeInOut" }}
+          className={floatingOrbClassName}
+        />
+      ))}
+      {!hasWebsitePreview ? (
+        <>
+          <div className="absolute inset-x-10 bottom-10 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+          <div className="absolute left-1/2 top-1/2 h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/12" />
+          <Sparkle className="absolute right-12 top-12 h-6 w-6 text-frost/70" />
+        </>
+      ) : null}
     </div>
   );
 }
 
 function ProjectDetailsModal({ project, onClose }) {
+  const { reduceMotion } = useMotionPreferences();
+  const hasPreview = Boolean(project.previewImage);
+
   useEffect(() => {
     if (!project) return undefined;
 
@@ -772,28 +892,25 @@ function ProjectDetailsModal({ project, onClose }) {
     >
       <button className="project-modal-backdrop" type="button" aria-label="Close project details" onClick={onClose} />
       <motion.article
-        initial={{ opacity: 0, y: 34, scale: 0.96, filter: "blur(18px)" }}
-        animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
-        exit={{ opacity: 0, y: 22, scale: 0.97, filter: "blur(14px)" }}
-        transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
+        initial={reduceMotion ? false : { opacity: 0, y: 34, scale: 0.96 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 22, scale: 0.97 }}
+        transition={{ duration: reduceMotion ? 0.12 : 0.42, ease: [0.16, 1, 0.3, 1] }}
         className="project-modal-panel"
       >
         <button className="project-modal-close" type="button" onClick={onClose} aria-label="Close project details">
           <X className="h-5 w-5" />
         </button>
-        <div className="project-modal-preview">
-          <div className={`absolute inset-0 bg-gradient-to-br ${project.accent} opacity-42 blur-3xl`} />
-          {project.previewImage ? (
-            <div className="project-modal-screenshot">
-              <img src={project.previewImage} alt={`${project.title} live website preview`} />
+        {!hasPreview ? (
+          <div className="project-modal-preview">
+            <div className={`absolute inset-0 bg-gradient-to-br ${project.accent} opacity-42 blur-3xl`} />
+            <div className="project-modal-preview-caption">
+              <p>{project.type}</p>
+              <h3>{project.header ?? project.title}</h3>
+              <span>{project.title}</span>
             </div>
-          ) : null}
-          <div className="project-modal-preview-caption">
-            <p>{project.type}</p>
-            <h3>{project.header ?? project.title}</h3>
-            <span>{project.title}</span>
           </div>
-        </div>
+        ) : null}
         <div className="project-modal-content">
           <p className="text-xs font-bold uppercase tracking-[0.36em] text-violet-aura">{project.status ?? "Project Details"}</p>
           <h2 className="mt-4 font-display text-4xl font-bold leading-tight text-frost sm:text-5xl">{project.title}</h2>
@@ -826,7 +943,46 @@ function ProjectDetailsModal({ project, onClose }) {
 
 function GraphicsSamples() {
   const [activeGraphicsId, setActiveGraphicsId] = useState(graphicsWorkTypes[0].id);
+  const { reduceMotion } = useMotionPreferences();
   const activeGraphics = graphicsWorkTypes.find((category) => category.id === activeGraphicsId) ?? graphicsWorkTypes[0];
+  const sampleCards = activeGraphics.samples.map((sample, index) => (
+    <article
+      key={sample.id}
+      className="graphics-sample-card"
+      style={{ "--sample-delay": `${Math.min(index, 8) * 26}ms` }}
+      tabIndex={0}
+    >
+      <div
+        className={`graphics-sample-preview ${
+          sample.image
+            ? `graphics-sample-preview-image ${sample.orientation === "portrait" ? "graphics-sample-preview-portrait" : ""}`
+            : `bg-gradient-to-br ${activeGraphics.accent}`
+        }`}
+      >
+        {sample.image ? (
+          <img
+            src={sample.image}
+            alt={sample.title}
+            loading={index < 3 ? "eager" : "lazy"}
+            decoding="async"
+            fetchPriority={index < 3 ? "high" : "low"}
+            sizes="(min-width: 1024px) 31vw, (min-width: 768px) 48vw, 92vw"
+          />
+        ) : (
+          <>
+            <div className="graphics-sample-orbit" />
+            <div className="graphics-sample-orbit graphics-sample-orbit-two" />
+            <span>{sample.number}</span>
+          </>
+        )}
+      </div>
+      <div className="graphics-sample-meta">
+        <p>{sample.label}</p>
+        <h3>{sample.title}</h3>
+        <span>{sample.note}</span>
+      </div>
+    </article>
+  ));
 
   return (
     <div className="mt-12">
@@ -848,6 +1004,11 @@ function GraphicsSamples() {
             );
           })}
         </div>
+        {reduceMotion ? (
+          <p className="mx-auto mt-5 max-w-2xl text-center text-sm font-semibold leading-7 text-white/58">
+            {activeGraphics.summary}
+          </p>
+        ) : (
         <AnimatePresence mode="wait">
           <motion.p
             key={activeGraphics.id}
@@ -860,8 +1021,14 @@ function GraphicsSamples() {
             {activeGraphics.summary}
           </motion.p>
         </AnimatePresence>
+        )}
       </Reveal>
 
+      {reduceMotion ? (
+        <div key={activeGraphics.id} className="graphics-sample-grid mt-12">
+          {sampleCards}
+        </div>
+      ) : (
       <AnimatePresence mode="wait">
         <motion.div
           key={activeGraphics.id}
@@ -871,54 +1038,68 @@ function GraphicsSamples() {
           transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
           className="graphics-sample-grid mt-12"
         >
-          {activeGraphics.samples.map((sample, index) => (
-            <article
-              key={sample.id}
-              className="graphics-sample-card"
-              style={{ "--sample-delay": `${Math.min(index, 8) * 26}ms` }}
-              tabIndex={0}
-            >
-              <div
-                className={`graphics-sample-preview ${
-                  sample.image
-                    ? `graphics-sample-preview-image ${sample.orientation === "portrait" ? "graphics-sample-preview-portrait" : ""}`
-                    : `bg-gradient-to-br ${activeGraphics.accent}`
-                }`}
-              >
-                {sample.image ? (
-                  <img
-                    src={sample.image}
-                    alt={sample.title}
-                    loading={index < 3 ? "eager" : "lazy"}
-                    decoding="async"
-                    fetchpriority={index < 3 ? "high" : "low"}
-                    sizes="(min-width: 1024px) 31vw, (min-width: 768px) 48vw, 92vw"
-                  />
-                ) : (
-                  <>
-                    <div className="graphics-sample-orbit" />
-                    <div className="graphics-sample-orbit graphics-sample-orbit-two" />
-                    <span>{sample.number}</span>
-                  </>
-                )}
-              </div>
-              <div className="graphics-sample-meta">
-                <p>{sample.label}</p>
-                <h3>{sample.title}</h3>
-                <span>{sample.note}</span>
-              </div>
-            </article>
-          ))}
+          {sampleCards}
         </motion.div>
       </AnimatePresence>
+      )}
     </div>
+  );
+}
+
+function ProjectCard({ project, index, onSelect }) {
+  const { reduceMotion } = useMotionPreferences();
+  const content = (
+    <>
+      <ProjectVisual accent={project.accent} index={index} project={project} />
+      <div className="p-6">
+        <p className="text-xs font-bold uppercase tracking-[0.32em] text-violet-aura">{project.type}</p>
+        <h3 className="mt-4 font-display text-2xl font-bold text-frost">{project.title}</h3>
+        <p className="mt-4 leading-7 text-white/58">{project.text}</p>
+        <div className="mt-7 flex flex-wrap items-center gap-3">
+          <button type="button" className="project-mini-button" onClick={() => onSelect(project)}>
+            View Details
+            <ArrowUpRight className="h-4 w-4" />
+          </button>
+          {project.repoUrl ? (
+            <a href={project.repoUrl} target="_blank" rel="noreferrer" className="project-icon-link" aria-label={`${project.title} GitHub repo`}>
+              <Github className="h-4 w-4" />
+            </a>
+          ) : null}
+          {project.liveUrl ? (
+            <a href={project.liveUrl} target="_blank" rel="noreferrer" className="project-icon-link" aria-label={`${project.title} live website`}>
+              <ExternalLink className="h-4 w-4" />
+            </a>
+          ) : null}
+        </div>
+      </div>
+    </>
+  );
+
+  if (reduceMotion) {
+    return <article className="project-card">{content}</article>;
+  }
+
+  return (
+    <motion.article
+      initial={{ opacity: 0, y: 26 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.46, delay: index * 0.06, ease: [0.16, 1, 0.3, 1] }}
+      whileHover={{ y: -12 }}
+      className="project-card"
+    >
+      {content}
+    </motion.article>
   );
 }
 
 function Projects() {
   const [activeCategoryId, setActiveCategoryId] = useState(projectCategories[0].id);
   const [selectedProject, setSelectedProject] = useState(null);
+  const { reduceMotion } = useMotionPreferences();
   const activeCategory = projectCategories.find((category) => category.id === activeCategoryId) ?? projectCategories[0];
+  const projectCards = activeCategory.projects.map((project, index) => (
+    <ProjectCard key={project.title} project={project} index={index} onSelect={setSelectedProject} />
+  ));
 
   return (
     <section id="projects" className="section-wrap">
@@ -948,6 +1129,11 @@ function Projects() {
               );
             })}
           </div>
+          {reduceMotion ? (
+            <p className="mx-auto mt-5 max-w-2xl text-center text-sm font-semibold leading-7 text-white/58">
+              {activeCategory.summary}
+            </p>
+          ) : (
           <AnimatePresence mode="wait">
             <motion.p
               key={activeCategory.id}
@@ -960,9 +1146,14 @@ function Projects() {
               {activeCategory.summary}
             </motion.p>
           </AnimatePresence>
+          )}
         </Reveal>
         {activeCategory.id === "graphics" ? (
           <GraphicsSamples />
+        ) : reduceMotion ? (
+          <div key={activeCategory.id} className="mt-14 grid gap-6 lg:grid-cols-3">
+            {projectCards}
+          </div>
         ) : (
           <AnimatePresence mode="wait">
             <motion.div
@@ -973,43 +1164,7 @@ function Projects() {
               transition={{ duration: 0.48, ease: [0.16, 1, 0.3, 1] }}
               className="mt-14 grid gap-6 lg:grid-cols-3"
             >
-              {activeCategory.projects.map((project, index) => (
-                <motion.article
-                  key={project.title}
-                  initial={{ opacity: 0, y: 26 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.46, delay: index * 0.06, ease: [0.16, 1, 0.3, 1] }}
-                  whileHover={{ y: -12 }}
-                  className="project-card"
-                >
-                  <ProjectVisual accent={project.accent} index={index} project={project} />
-                  <div className="p-6">
-                    <p className="text-xs font-bold uppercase tracking-[0.32em] text-violet-aura">{project.type}</p>
-                    <h3 className="mt-4 font-display text-2xl font-bold text-frost">{project.title}</h3>
-                    <p className="mt-4 leading-7 text-white/58">{project.text}</p>
-                    <div className="mt-7 flex flex-wrap items-center gap-3">
-                      <button
-                        type="button"
-                        className="project-mini-button"
-                        onClick={() => setSelectedProject(project)}
-                      >
-                        View Details
-                        <ArrowUpRight className="h-4 w-4" />
-                      </button>
-                      {project.repoUrl ? (
-                        <a href={project.repoUrl} target="_blank" rel="noreferrer" className="project-icon-link" aria-label={`${project.title} GitHub repo`}>
-                          <Github className="h-4 w-4" />
-                        </a>
-                      ) : null}
-                      {project.liveUrl ? (
-                        <a href={project.liveUrl} target="_blank" rel="noreferrer" className="project-icon-link" aria-label={`${project.title} live website`}>
-                          <ExternalLink className="h-4 w-4" />
-                        </a>
-                      ) : null}
-                    </div>
-                  </div>
-                </motion.article>
-              ))}
+              {projectCards}
             </motion.div>
           </AnimatePresence>
         )}
@@ -1021,11 +1176,53 @@ function Projects() {
   );
 }
 
-function Reviews() {
-  const [focusedReview, setFocusedReview] = useState(null);
+function ReviewProofCard({ review, index }) {
+  const { isMobile, reduceMotion } = useMotionPreferences();
+  const content = (
+    <>
+      <div className="review-proof-topline">
+        <span className="inline-flex items-center gap-2">
+          <Star className="h-4 w-4 fill-violet-aura text-violet-aura" />
+          Fiverr Review
+        </span>
+        <span>{String(index + 1).padStart(2, "0")}</span>
+      </div>
+      <img
+        className="review-proof-image"
+        src={review.image}
+        alt={review.alt}
+        loading={index < 2 ? "eager" : "lazy"}
+        decoding="async"
+        fetchPriority={index < 2 ? "high" : "low"}
+        sizes="(min-width: 1024px) 30vw, (min-width: 768px) 46vw, 92vw"
+      />
+    </>
+  );
+
+  if (reduceMotion) {
+    return (
+      <article className="review-proof-card" tabIndex={0}>
+        {content}
+      </article>
+    );
+  }
 
   return (
-    <section id="reviews" className="section-wrap relative overflow-clip">
+    <motion.article
+      whileHover={isMobile ? undefined : { y: -10, scale: 1.026 }}
+      whileTap={isMobile ? { scale: 0.99 } : undefined}
+      transition={{ type: "spring", stiffness: 260, damping: 26, mass: 0.55 }}
+      className="review-proof-card"
+      tabIndex={0}
+    >
+      {content}
+    </motion.article>
+  );
+}
+
+function Reviews() {
+  return (
+    <section id="reviews" className="section-wrap reviews-section relative overflow-clip">
       <div className="section-glow right-[8%] top-12" />
       <div className="mx-auto max-w-6xl px-5 sm:px-6 lg:px-8">
         <SectionLabel
@@ -1047,35 +1244,10 @@ function Reviews() {
             ))}
           </div>
         </Reveal>
-        <div className={`review-proof-grid mt-14 ${focusedReview !== null ? "review-proof-grid-focused" : ""}`}>
+        <div className="review-proof-grid mt-14">
           {fiverrReviews.map((review, index) => (
             <Reveal key={review.image} delay={(index % 4) * 0.04}>
-              <motion.article
-                animate={
-                  focusedReview === null
-                    ? { opacity: 1, scale: 1 }
-                    : focusedReview === index
-                      ? { opacity: 1, scale: 1.018 }
-                      : { opacity: 0.42, scale: 0.965 }
-                }
-                whileHover={{ y: -12, scale: 1.055, rotateX: 1, rotateY: index % 2 === 0 ? -1 : 1 }}
-                onHoverStart={() => setFocusedReview(index)}
-                onHoverEnd={() => setFocusedReview(null)}
-                onFocus={() => setFocusedReview(index)}
-                onBlur={() => setFocusedReview(null)}
-                transition={{ type: "spring", stiffness: 220, damping: 24 }}
-                className={`review-proof-card ${focusedReview === index ? "review-proof-card-focused" : ""}`}
-                tabIndex={0}
-              >
-                <div className="review-proof-topline">
-                  <span className="inline-flex items-center gap-2">
-                    <Star className="h-4 w-4 fill-violet-aura text-violet-aura" />
-                    Fiverr Review
-                  </span>
-                  <span>{String(index + 1).padStart(2, "0")}</span>
-                </div>
-                <img className="review-proof-image" src={review.image} alt={review.alt} loading="lazy" decoding="async" />
-              </motion.article>
+              <ReviewProofCard review={review} index={index} />
             </Reveal>
           ))}
         </div>
@@ -1103,7 +1275,7 @@ function Contact() {
         <Reveal>
           <div className="contact-shell relative overflow-hidden p-7 sm:p-10 lg:p-14">
             <div className="absolute right-0 top-0 h-64 w-64 translate-x-1/3 -translate-y-1/3 rounded-full bg-violet-aura/30 blur-3xl" />
-            <div className="relative grid gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:items-end">
+            <div className="relative grid gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
               <div>
                 <p className="mb-4 text-xs font-semibold uppercase tracking-[0.42em] text-violet-aura">Contact</p>
                 <h2 className="max-w-3xl font-display text-4xl font-bold leading-tight text-frost sm:text-6xl">
@@ -1113,7 +1285,7 @@ function Contact() {
                   Available for graphics design work, creative direction experiments, and future web-based portfolio showcases.
                 </p>
               </div>
-              <div className="grid gap-3">
+              <div className="contact-actions grid gap-3">
                 <a href="mailto:ayonr169@gmail.com" className="group inline-flex items-center justify-center gap-3 rounded-full bg-frost px-7 py-4 text-sm font-extrabold uppercase tracking-[0.18em] text-night transition hover:bg-white">
                   <Mail className="h-4 w-4" />
                   Start a Project
@@ -1155,6 +1327,7 @@ function Contact() {
 
 function Profile() {
   const [profile, setProfile] = useState(defaultProfile);
+  const { reduceMotion } = useMotionPreferences();
 
   useEffect(() => {
     const storedProfile = readSavedProfile();
@@ -1171,9 +1344,13 @@ function Profile() {
     <section id="profile" className="section-wrap profile-section">
       <div className="section-glow left-[8%] top-16" />
       <div className="mx-auto max-w-6xl px-5 sm:px-6 lg:px-8">
-        <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
-          <Reveal>
-            <motion.article whileHover={{ y: -10, rotateX: 1.5, rotateY: -1.5 }} className="profile-identity-card">
+        <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-stretch">
+          <Reveal className="h-full">
+            <motion.article
+              whileHover={reduceMotion ? undefined : { y: -10, rotateX: 1.5, rotateY: -1.5 }}
+              transition={reduceMotion ? { duration: 0 } : undefined}
+              className="profile-identity-card profile-identity-card-main"
+            >
               <div className="profile-avatar">
                 {profile.photoDataUrl || profile.photoUrl ? (
                   <img src={profile.photoDataUrl || profile.photoUrl} alt={`${profile.name} profile`} />
@@ -1198,16 +1375,10 @@ function Profile() {
                   <span>{profile.address}</span>
                 </div>
               </div>
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <a href={cvAssetUrl} download="Ayon-Roy-CV.pdf" className="profile-download-button">
-                  <Download className="h-4 w-4" />
-                  Download CV
-                </a>
-              </div>
             </motion.article>
           </Reveal>
 
-          <div className="grid gap-5">
+          <div className="profile-detail-column grid gap-5">
             <Reveal delay={0.08}>
               <div className="profile-summary-grid">
                 {profileStats.map(([label, value]) => (
@@ -1225,11 +1396,12 @@ function Profile() {
                   <BookOpen className="h-5 w-5" />
                   <p className="text-xs font-bold uppercase tracking-[0.34em]">Academic Information</p>
                 </div>
-                <div className="mt-6 grid gap-4">
+                <div className="profile-academic-list">
                   {[
                     ["Program", profile.academicProgram],
                     ["Focus", profile.academicFocus],
                     ["Status", profile.academicStatus],
+                    ["Study", "Studied CSE at Gono Bishwabidyalay"],
                   ].map(([label, value]) => (
                     <div key={label} className="profile-academic-row">
                       <span>{label}</span>
@@ -1304,19 +1476,6 @@ function HomePage({ onNavigate }) {
 function ProjectsPage({ onNavigate }) {
   return (
     <>
-      <PageHero
-        eyebrow="Project Archive"
-        title="Selected design worlds, ready for your next case study drop."
-        copy="A dedicated project page for future graphics design screenshots, client visuals, social packs, and polished breakdowns."
-      >
-        <button
-          className="inline-flex items-center justify-center gap-3 rounded-full bg-frost px-7 py-4 text-sm font-extrabold uppercase tracking-[0.18em] text-night transition hover:-translate-y-1 hover:bg-white"
-          onClick={() => onNavigate("home", "contact")}
-        >
-          Book Design Work
-          <ArrowUpRight className="h-4 w-4" />
-        </button>
-      </PageHero>
       <Projects />
       <PageCTA onNavigate={onNavigate} label="Contact Ayon" />
     </>
@@ -1326,19 +1485,6 @@ function ProjectsPage({ onNavigate }) {
 function ReviewsPage({ onNavigate }) {
   return (
     <>
-      <PageHero
-        eyebrow="Client Proof"
-        title="Fiverr reviews and trust signals get their own spotlight."
-        copy="A focused reviews page for screenshots, buyer quotes, order proof, and polished testimonial storytelling."
-      >
-        <button
-          className="inline-flex items-center justify-center gap-3 rounded-full border border-white/14 bg-white/[0.065] px-7 py-4 text-sm font-extrabold uppercase tracking-[0.18em] text-frost transition hover:-translate-y-1 hover:border-violet-aura/60 hover:bg-white/[0.1]"
-          onClick={() => onNavigate("projects")}
-        >
-          View Projects
-          <ArrowUpRight className="h-4 w-4" />
-        </button>
-      </PageHero>
       <Reviews />
       <PageCTA onNavigate={onNavigate} label="Work With Me" />
     </>
@@ -1378,6 +1524,13 @@ function ProfilePage({ onNavigate }) {
 }
 
 export default function App() {
+  const isMobile = useMediaQuery(MOBILE_MOTION_QUERY);
+  const prefersReducedMotion = useMediaQuery(REDUCED_MOTION_QUERY);
+  const reduceMotion = prefersReducedMotion;
+  const motionPreferences = useMemo(
+    () => ({ isMobile, prefersReducedMotion, reduceMotion }),
+    [isMobile, prefersReducedMotion, reduceMotion],
+  );
   const [page, setPage] = useState(getInitialPage);
   const [pendingScroll, setPendingScroll] = useState(null);
   const [exitCompleteCount, setExitCompleteCount] = useState(0);
@@ -1402,6 +1555,7 @@ export default function App() {
       isRouteChange,
       targetPage: normalizePage(nextPage),
       startExitCompleteCount: exitCompleteCount,
+      shouldWaitForExit: isRouteChange && !reduceMotion,
     });
   };
 
@@ -1421,18 +1575,19 @@ export default function App() {
         isRouteChange,
         targetPage: normalizePage(nextPage),
         startExitCompleteCount: exitCompleteCount,
+        shouldWaitForExit: isRouteChange && !reduceMotion,
       });
     };
 
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, [exitCompleteCount, page]);
+  }, [exitCompleteCount, page, reduceMotion]);
 
   useEffect(() => {
     if (!pendingScroll) return undefined;
     if (pendingScroll.isRouteChange) {
       if (activePage !== pendingScroll.targetPage) return undefined;
-      if (exitCompleteCount <= pendingScroll.startExitCompleteCount) return undefined;
+      if (pendingScroll.shouldWaitForExit && exitCompleteCount <= pendingScroll.startExitCompleteCount) return undefined;
     }
 
     const timeoutId = window.setTimeout(
@@ -1476,35 +1631,49 @@ export default function App() {
     return () => window.clearTimeout(timeoutId);
   }, [activePage, pendingScroll]);
 
+  const pageContent = (
+    <>
+      {activePage === "projects" ? <ProjectsPage onNavigate={navigate} /> : null}
+      {activePage === "reviews" ? <ReviewsPage onNavigate={navigate} /> : null}
+      {activePage === "profile" ? <ProfilePage onNavigate={navigate} /> : null}
+      {activePage === "home" ? <HomePage onNavigate={navigate} /> : null}
+    </>
+  );
+
   return (
-    <main className="min-h-screen overflow-x-clip bg-night text-white antialiased">
-      <ScrollProgress />
-      <ChromeNav currentPage={activePage} onNavigate={navigate} />
-      <AnimatePresence mode="wait" initial={false} onExitComplete={() => setExitCompleteCount((value) => value + 1)}>
-        <motion.div
-          className="page-transition-layer"
-          key={activePage}
-          initial={{ opacity: 0, scale: 0.996 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.998 }}
-          transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
+    <MotionPreferenceContext.Provider value={motionPreferences}>
+      <main className="min-h-screen overflow-x-clip bg-night text-white antialiased">
+        <ScrollProgress />
+        <ChromeNav currentPage={activePage} onNavigate={navigate} />
+        {reduceMotion ? (
+          <div className="page-transition-layer" key={activePage}>
+            {pageContent}
+          </div>
+        ) : (
+          <AnimatePresence mode="wait" initial={false} onExitComplete={() => setExitCompleteCount((value) => value + 1)}>
+            <motion.div
+              className="page-transition-layer"
+              key={activePage}
+              initial={{ opacity: 0, scale: 0.996 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.998 }}
+              transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
+            >
+              {pageContent}
+            </motion.div>
+          </AnimatePresence>
+        )}
+        <a
+          href="https://wa.me/8801630802119"
+          target="_blank"
+          rel="noreferrer"
+          className="whatsapp-float"
+          aria-label="Contact on WhatsApp"
+          title="WhatsApp"
         >
-          {activePage === "projects" ? <ProjectsPage onNavigate={navigate} /> : null}
-          {activePage === "reviews" ? <ReviewsPage onNavigate={navigate} /> : null}
-          {activePage === "profile" ? <ProfilePage onNavigate={navigate} /> : null}
-          {activePage === "home" ? <HomePage onNavigate={navigate} /> : null}
-        </motion.div>
-      </AnimatePresence>
-      <a
-        href="https://wa.me/8801630802119"
-        target="_blank"
-        rel="noreferrer"
-        className="whatsapp-float"
-        aria-label="Contact on WhatsApp"
-        title="WhatsApp"
-      >
-        <MessageCircle className="h-6 w-6" />
-      </a>
-    </main>
+          <MessageCircle className="h-6 w-6" />
+        </a>
+      </main>
+    </MotionPreferenceContext.Provider>
   );
 }
