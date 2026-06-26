@@ -543,6 +543,8 @@ body {
 .project-card {
   overflow: hidden;
   position: relative;
+  min-width: 0;
+  contain: layout paint;
 }
 
 .project-card::after,
@@ -837,11 +839,117 @@ body {
     linear-gradient(135deg, rgba(67, 20, 132, 0.38), rgba(22, 6, 47, 0.72));
 }
 
+.project-visual-app {
+  display: grid;
+  min-height: 20rem;
+  place-items: center;
+  padding: 1.35rem;
+  background:
+    radial-gradient(circle at 26% 14%, rgba(255, 255, 255, 0.2), transparent 28%),
+    radial-gradient(circle at 70% 48%, rgba(192, 132, 255, 0.34), transparent 34%),
+    linear-gradient(145deg, rgba(80, 30, 140, 0.72), rgba(21, 5, 46, 0.9));
+}
+
+.project-app-preview-frame {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  width: 100%;
+  min-height: 15.25rem;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 1.3rem;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(241, 235, 255, 0.92)),
+    #ffffff;
+  box-shadow:
+    0 22px 54px rgba(0, 0, 0, 0.32),
+    0 0 38px rgba(192, 132, 255, 0.18);
+}
+
+.project-app-preview-frame img {
+  display: block;
+  width: 100%;
+  height: 15.25rem;
+  object-fit: contain;
+  object-position: center;
+}
+
+.project-app-content {
+  display: flex;
+  min-height: 20.25rem;
+  flex-direction: column;
+}
+
+.project-app-type {
+  color: #c084ff;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+}
+
+.project-app-title {
+  margin-top: 1.15rem;
+  color: #f2edff;
+  font-family: "Space Grotesk", Inter, sans-serif;
+  font-size: clamp(2rem, 3vw, 2.45rem);
+  font-weight: 900;
+  line-height: 1.02;
+}
+
+.project-app-copy {
+  min-height: 5rem;
+  margin-top: 1.25rem;
+  color: rgba(255, 255, 255, 0.66);
+  font-size: 1rem;
+  font-weight: 720;
+  line-height: 1.72;
+}
+
+.project-app-action-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: auto;
+  padding-top: 1.75rem;
+}
+
+.project-app-size {
+  display: grid;
+  min-width: 6.5rem;
+  gap: 0.35rem;
+}
+
+.project-app-size span {
+  color: rgba(255, 255, 255, 0.42);
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.project-app-size strong {
+  color: #f2edff;
+  font-family: "Space Grotesk", Inter, sans-serif;
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.project-download-button {
+  margin-left: auto;
+  padding-right: 1.15rem;
+  padding-left: 1.2rem;
+  white-space: nowrap;
+}
+
 .project-visual-website {
   display: grid;
-  align-content: space-between;
+  align-content: center;
   gap: 1.15rem;
-  min-height: 26.5rem;
+  min-height: 22rem;
   padding: 1.25rem;
   border-bottom: 0;
   background:
@@ -1809,7 +1917,43 @@ body {
   }
 
   .hero-copy-block {
+    margin-right: auto;
+    margin-left: auto;
     max-width: 100%;
+    text-align: center;
+  }
+
+  .hero-copy-block > div:first-child {
+    justify-content: center;
+  }
+
+  .hero-copy-block h1,
+  .hero-copy-block p {
+    margin-right: auto;
+    margin-left: auto;
+    max-width: min(100%, 20.5rem);
+    text-align: center;
+    text-align-last: center;
+  }
+
+  .hero-copy-block p {
+    font-size: 1rem;
+    line-height: 1.75;
+  }
+
+  .hero-copy-block > .mt-10 {
+    align-items: center;
+  }
+
+  .hero-copy-block > .mt-10 a {
+    width: min(100%, 20.5rem);
+  }
+
+  .section-wrap h2 {
+    max-width: min(100%, 21rem);
+    margin-right: auto;
+    margin-left: auto;
+    font-size: 2.05rem;
   }
 
   .hero-coverflow-desktop {
@@ -1859,18 +2003,126 @@ body {
     display: none;
   }
 
+  .page-hero {
+    padding-top: 9.4rem;
+  }
+
+  .page-hero-eyebrow,
   .page-hero-title,
   .page-hero-copy {
-    text-align: left;
-    text-align-last: left;
+    margin-right: auto;
+    margin-left: auto;
+    text-align: center;
+    text-align-last: center;
+  }
+
+  .profile-welcome-title {
+    margin-right: auto;
+    margin-left: auto;
+    text-align: center;
+    text-align-last: center;
+  }
+
+  .reviews-section {
+    padding-top: 9.25rem;
+  }
+
+  .page-hero .flex.flex-col {
+    align-items: center;
+  }
+
+  .about-section,
+  .contact-section {
+    text-align: center;
+  }
+
+  .about-section h2,
+  .about-section p,
+  .contact-section h2,
+  .contact-section p {
+    margin-right: auto;
+    margin-left: auto;
+  }
+
+  .about-section .glass-panel {
+    text-align: center;
+  }
+
+  .contact-section .relative.grid {
+    justify-items: center;
   }
 
   .project-visual {
     min-height: 16rem;
   }
 
+  .project-visual-app {
+    min-height: 15.5rem;
+    padding: 0.9rem;
+  }
+
+  .project-app-preview-frame {
+    min-height: 12.75rem;
+    border-radius: 1.05rem;
+  }
+
+  .project-app-preview-frame img {
+    height: 12.75rem;
+  }
+
+  .project-app-content {
+    min-height: 18rem;
+  }
+
+  .project-app-title {
+    font-size: 2rem;
+  }
+
+  .project-app-copy {
+    min-height: 4.75rem;
+  }
+
+  .project-app-action-row {
+    gap: 0.85rem;
+  }
+
+  .projects-section {
+    contain: paint;
+    overflow-x: clip;
+  }
+
+  .projects-section h2 {
+    font-size: 2.2rem;
+  }
+
+  .project-tabs,
+  .project-tab,
+  .project-app-card,
+  .project-app-action-row,
+  .project-download-button {
+    min-width: 0;
+  }
+
+  .project-app-size {
+    min-width: 4.8rem;
+  }
+
+  .project-app-size strong {
+    font-size: 1.25rem;
+  }
+
+  .project-download-button {
+    padding: 0.78rem 0.82rem;
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+  }
+
+  .project-visual-glow {
+    display: none;
+  }
+
   .project-visual-website {
-    min-height: 24rem;
+    min-height: 17rem;
     padding: 1rem;
   }
 
@@ -1975,6 +2227,21 @@ body {
   .graphics-sample-grid:has(.graphics-sample-card:hover) .graphics-sample-card:not(:hover),
   .graphics-sample-grid:has(.graphics-sample-card:focus-visible) .graphics-sample-card:not(:focus-visible) {
     opacity: 1;
+  }
+
+  .graphics-sample-card {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 24rem;
+    transition: none;
+  }
+
+  .project-tab,
+  .graphics-subtab,
+  .project-mini-button,
+  .project-icon-link,
+  .project-primary-link,
+  .project-secondary-link {
+    transition: none;
   }
 }
 

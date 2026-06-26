@@ -185,25 +185,34 @@ const projectCategories = [
     id: "android",
     label: "Android App",
     icon: Smartphone,
-    summary: "Mobile app concepts, UI flows, feature screens, and future APK/product case studies.",
+    summary: "Downloadable Android apps with clean previews, APK sizes, and direct install files.",
     projects: [
       {
-        title: "Android App Case Study",
-        type: "Future Mobile Project",
-        accent: "from-violet-500 to-fuchsia-400",
-        text: "Add app screenshots, splash screens, feature flows, and mobile UI previews here.",
+        title: "Cashify",
+        type: "Android Finance App",
+        accent: "from-emerald-400 to-orange-500",
+        text: "A simple cash-flow companion for tracking daily money movement and personal balances.",
+        appPreviewImage: assetHref("apps/previews/cashify.png?v=20260627"),
+        apkUrl: assetHref("apps/apks/cashify.apk"),
+        apkSize: "42 MB",
       },
       {
-        title: "Dashboard Mobile UI",
-        type: "Future App Interface",
-        accent: "from-cyan-300 to-violet-400",
-        text: "Prepared for Android dashboard visuals, authentication screens, and component states.",
+        title: "Notes",
+        type: "Android Utility App",
+        accent: "from-cyan-300 to-sky-500",
+        text: "A focused note-taking app for quick writing, lightweight organization, and everyday reminders.",
+        appPreviewImage: assetHref("apps/previews/notes.png?v=20260627"),
+        apkUrl: assetHref("apps/apks/notes.apk"),
+        apkSize: "28 MB",
       },
       {
-        title: "Utility App Concept",
-        type: "Future Prototype",
-        accent: "from-slate-100 to-violet-300",
-        text: "A slot for a practical app idea with screen-by-screen storytelling and outcomes.",
+        title: "Unit Converter App",
+        type: "Android Calculator App",
+        accent: "from-lime-300 to-orange-500",
+        text: "A practical converter for common units with fast inputs, clear results, and a clean mobile flow.",
+        appPreviewImage: assetHref("apps/previews/unit-converter.png?v=20260627"),
+        apkUrl: assetHref("apps/apks/unit-converter.apk"),
+        apkSize: "9 MB",
       },
     ],
   },
@@ -227,7 +236,7 @@ const projectCategories = [
           "Responsive website structure for desktop and mobile",
           "Ready for project screenshots, UI breakdowns, and future feature notes",
         ],
-        previewImage: assetHref("projects/lms-preview.png"),
+        previewImage: assetHref("projects/lms-preview.png?v=20260626b"),
         repoUrl: "https://github.com/coderAyon/LMS-Website",
         liveUrl: "https://coderayon.github.io/LMS-Website/",
       },
@@ -599,7 +608,7 @@ function HeroCoverflow({ className = "" }) {
                 alt={photo.alt}
                 loading={index === 0 ? "eager" : "lazy"}
                 decoding="async"
-                fetchPriority={index === 0 ? "high" : "low"}
+                fetchpriority={index === 0 ? "high" : "low"}
               />
               <span className="hero-cover-card-shine" />
             </button>
@@ -716,7 +725,7 @@ function Hero({ onNavigate }) {
 
 function About() {
   return (
-    <section id="about" className="section-wrap">
+    <section id="about" className="section-wrap about-section">
       <div className="mx-auto grid max-w-6xl gap-10 px-5 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16 lg:px-8">
         <Reveal>
           <p className="mb-4 text-xs font-semibold uppercase tracking-[0.42em] text-violet-aura">About Me</p>
@@ -789,15 +798,17 @@ function Skills() {
 }
 
 function ProjectVisual({ accent, index, project }) {
-  const { reduceMotion } = useMotionPreferences();
+  const { isMobile, reduceMotion } = useMotionPreferences();
+  const simplifyMotion = reduceMotion || isMobile;
   const hasWebsitePreview = Boolean(project?.previewImage);
+  const hasAppPreview = Boolean(project?.appPreviewImage);
   const floatingPanelClassName = "absolute left-7 top-8 h-28 w-28 rounded-[2rem] border border-white/14 bg-white/[0.09] shadow-aura";
   const floatingOrbClassName = "absolute bottom-7 right-8 h-36 w-36 rounded-full border border-white/12 bg-gradient-to-br from-white/16 to-white/[0.03]";
 
   return (
-    <div className={`project-visual ${hasWebsitePreview ? "project-visual-website" : ""}`}>
-      <div className={`absolute inset-x-8 top-8 h-28 rounded-full bg-gradient-to-r ${accent} opacity-60 blur-3xl`} />
-      {project?.header && !hasWebsitePreview ? (
+    <div className={`project-visual ${hasWebsitePreview ? "project-visual-website" : ""} ${hasAppPreview ? "project-visual-app" : ""}`}>
+      <div className={`project-visual-glow absolute inset-x-8 top-8 h-28 rounded-full bg-gradient-to-r ${accent} opacity-60 blur-3xl`} />
+      {project?.header && !hasWebsitePreview && !hasAppPreview ? (
         <div className="project-visual-header">
           <span>{project.status}</span>
           <strong>{project.header}</strong>
@@ -806,27 +817,30 @@ function ProjectVisual({ accent, index, project }) {
       ) : null}
       {hasWebsitePreview ? (
         <>
-        <div className="project-browser-frame">
-          <div className="project-browser-toolbar" aria-hidden="true">
-            <span />
-            <span />
-            <span />
-            <p>Live LMS preview</p>
+          <div className="project-browser-frame">
+            <div className="project-browser-toolbar" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+              <p>Live LMS preview</p>
+            </div>
+            <img src={project.previewImage} alt={`${project.title} website preview`} loading="lazy" decoding="async" />
           </div>
-          <img src={project.previewImage} alt={`${project.title} website preview`} loading="lazy" decoding="async" />
-        </div>
-        <div className="project-visual-details">
-          <span>{project.status}</span>
-          <strong>{project.header ?? project.title}</strong>
-          <p>{project.title}</p>
-          <div className="project-visual-tags" aria-hidden="true">
-            <em>Responsive</em>
-            <em>Case Study</em>
-          </div>
-        </div>
         </>
       ) : null}
-      {!hasWebsitePreview && (reduceMotion ? (
+      {hasAppPreview ? (
+        <div className="project-app-preview-frame">
+          <img
+            src={project.appPreviewImage}
+            alt={`${project.title} app preview`}
+            loading={index === 0 ? "eager" : "lazy"}
+            decoding="async"
+            fetchpriority={index === 0 ? "high" : "low"}
+            sizes="(min-width: 1024px) 31vw, (min-width: 768px) 48vw, 92vw"
+          />
+        </div>
+      ) : null}
+      {!hasWebsitePreview && !hasAppPreview && (simplifyMotion ? (
         <div className={floatingPanelClassName} />
       ) : (
         <motion.div
@@ -835,7 +849,7 @@ function ProjectVisual({ accent, index, project }) {
           className={floatingPanelClassName}
         />
       ))}
-      {!hasWebsitePreview && (reduceMotion ? (
+      {!hasWebsitePreview && !hasAppPreview && (simplifyMotion ? (
         <div className={floatingOrbClassName} />
       ) : (
         <motion.div
@@ -844,7 +858,7 @@ function ProjectVisual({ accent, index, project }) {
           className={floatingOrbClassName}
         />
       ))}
-      {!hasWebsitePreview ? (
+      {!hasWebsitePreview && !hasAppPreview ? (
         <>
           <div className="absolute inset-x-10 bottom-10 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
           <div className="absolute left-1/2 top-1/2 h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/12" />
@@ -943,13 +957,15 @@ function ProjectDetailsModal({ project, onClose }) {
 
 function GraphicsSamples() {
   const [activeGraphicsId, setActiveGraphicsId] = useState(graphicsWorkTypes[0].id);
-  const { reduceMotion } = useMotionPreferences();
+  const { isMobile, reduceMotion } = useMotionPreferences();
+  const simplifyMotion = reduceMotion || isMobile;
+  const eagerSampleLimit = isMobile ? 1 : 3;
   const activeGraphics = graphicsWorkTypes.find((category) => category.id === activeGraphicsId) ?? graphicsWorkTypes[0];
   const sampleCards = activeGraphics.samples.map((sample, index) => (
     <article
       key={sample.id}
       className="graphics-sample-card"
-      style={{ "--sample-delay": `${Math.min(index, 8) * 26}ms` }}
+      style={simplifyMotion ? undefined : { "--sample-delay": `${Math.min(index, 8) * 26}ms` }}
       tabIndex={0}
     >
       <div
@@ -963,9 +979,9 @@ function GraphicsSamples() {
           <img
             src={sample.image}
             alt={sample.title}
-            loading={index < 3 ? "eager" : "lazy"}
+            loading={index < eagerSampleLimit ? "eager" : "lazy"}
             decoding="async"
-            fetchPriority={index < 3 ? "high" : "low"}
+            fetchpriority={index < eagerSampleLimit ? "high" : "low"}
             sizes="(min-width: 1024px) 31vw, (min-width: 768px) 48vw, 92vw"
           />
         ) : (
@@ -1004,79 +1020,105 @@ function GraphicsSamples() {
             );
           })}
         </div>
-        {reduceMotion ? (
+        {simplifyMotion ? (
           <p className="mx-auto mt-5 max-w-2xl text-center text-sm font-semibold leading-7 text-white/58">
             {activeGraphics.summary}
           </p>
         ) : (
-        <AnimatePresence mode="wait">
-          <motion.p
-            key={activeGraphics.id}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-            className="mx-auto mt-5 max-w-2xl text-center text-sm font-semibold leading-7 text-white/58"
-          >
-            {activeGraphics.summary}
-          </motion.p>
-        </AnimatePresence>
+          <AnimatePresence mode="wait">
+            <motion.p
+              key={activeGraphics.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+              className="mx-auto mt-5 max-w-2xl text-center text-sm font-semibold leading-7 text-white/58"
+            >
+              {activeGraphics.summary}
+            </motion.p>
+          </AnimatePresence>
         )}
       </Reveal>
 
-      {reduceMotion ? (
+      {simplifyMotion ? (
         <div key={activeGraphics.id} className="graphics-sample-grid mt-12">
           {sampleCards}
         </div>
       ) : (
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={activeGraphics.id}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -14 }}
-          transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-          className="graphics-sample-grid mt-12"
-        >
-          {sampleCards}
-        </motion.div>
-      </AnimatePresence>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeGraphics.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -14 }}
+            transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            className="graphics-sample-grid mt-12"
+          >
+            {sampleCards}
+          </motion.div>
+        </AnimatePresence>
       )}
     </div>
   );
 }
 
 function ProjectCard({ project, index, onSelect }) {
-  const { reduceMotion } = useMotionPreferences();
+  const { isMobile, reduceMotion } = useMotionPreferences();
+  const simplifyMotion = reduceMotion || isMobile;
+  const isDownloadableApp = Boolean(project.apkUrl);
   const content = (
     <>
       <ProjectVisual accent={project.accent} index={index} project={project} />
-      <div className="p-6">
-        <p className="text-xs font-bold uppercase tracking-[0.32em] text-violet-aura">{project.type}</p>
-        <h3 className="mt-4 font-display text-2xl font-bold text-frost">{project.title}</h3>
-        <p className="mt-4 leading-7 text-white/58">{project.text}</p>
-        <div className="mt-7 flex flex-wrap items-center gap-3">
-          <button type="button" className="project-mini-button" onClick={() => onSelect(project)}>
-            View Details
-            <ArrowUpRight className="h-4 w-4" />
-          </button>
-          {project.repoUrl ? (
-            <a href={project.repoUrl} target="_blank" rel="noreferrer" className="project-icon-link" aria-label={`${project.title} GitHub repo`}>
-              <Github className="h-4 w-4" />
-            </a>
-          ) : null}
-          {project.liveUrl ? (
-            <a href={project.liveUrl} target="_blank" rel="noreferrer" className="project-icon-link" aria-label={`${project.title} live website`}>
-              <ExternalLink className="h-4 w-4" />
-            </a>
-          ) : null}
-        </div>
+      <div className={`p-6 ${isDownloadableApp ? "project-app-content" : ""}`}>
+        {isDownloadableApp ? (
+          <>
+            <p className="project-app-type">{project.type}</p>
+            <h3 className="project-app-title">{project.title}</h3>
+            <p className="project-app-copy">{project.text}</p>
+            <div className="project-app-action-row">
+              <div className="project-app-size">
+                <span>APK Size</span>
+                <strong>{project.apkSize}</strong>
+              </div>
+              <a href={project.apkUrl} download className="project-mini-button project-download-button">
+                Download now
+                <Download className="h-4 w-4" />
+              </a>
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="text-xs font-bold uppercase tracking-[0.32em] text-violet-aura">{project.type}</p>
+            <h3 className="mt-4 font-display text-2xl font-bold text-frost">{project.title}</h3>
+            <p className="mt-4 leading-7 text-white/58">{project.text}</p>
+            <div className="mt-7 flex flex-wrap items-center gap-3">
+              <button type="button" className="project-mini-button" onClick={() => onSelect(project)}>
+                View Details
+                <ArrowUpRight className="h-4 w-4" />
+              </button>
+              {project.repoUrl ? (
+                <a href={project.repoUrl} target="_blank" rel="noreferrer" className="project-icon-link" aria-label={`${project.title} GitHub repo`}>
+                  <Github className="h-4 w-4" />
+                </a>
+              ) : null}
+              {project.liveUrl ? (
+                <a href={project.liveUrl} target="_blank" rel="noreferrer" className="project-icon-link" aria-label={`${project.title} live website`}>
+                  <ExternalLink className="h-4 w-4" />
+                </a>
+              ) : null}
+            </div>
+          </>
+        )}
       </div>
     </>
   );
 
-  if (reduceMotion) {
-    return <article className="project-card">{content}</article>;
+  if (simplifyMotion) {
+    return (
+      <article className={`project-card ${isDownloadableApp ? "project-app-card" : ""}`}>
+        {content}
+      </article>
+    );
   }
 
   return (
@@ -1085,7 +1127,7 @@ function ProjectCard({ project, index, onSelect }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.46, delay: index * 0.06, ease: [0.16, 1, 0.3, 1] }}
       whileHover={{ y: -12 }}
-      className="project-card"
+      className={`project-card ${isDownloadableApp ? "project-app-card" : ""}`}
     >
       {content}
     </motion.article>
@@ -1095,14 +1137,15 @@ function ProjectCard({ project, index, onSelect }) {
 function Projects() {
   const [activeCategoryId, setActiveCategoryId] = useState(projectCategories[0].id);
   const [selectedProject, setSelectedProject] = useState(null);
-  const { reduceMotion } = useMotionPreferences();
+  const { isMobile, reduceMotion } = useMotionPreferences();
+  const simplifyMotion = reduceMotion || isMobile;
   const activeCategory = projectCategories.find((category) => category.id === activeCategoryId) ?? projectCategories[0];
   const projectCards = activeCategory.projects.map((project, index) => (
     <ProjectCard key={project.title} project={project} index={index} onSelect={setSelectedProject} />
   ));
 
   return (
-    <section id="projects" className="section-wrap">
+    <section id="projects" className="section-wrap projects-section">
       <div className="mx-auto max-w-6xl px-5 sm:px-6 lg:px-8">
         <SectionLabel
           eyebrow="Featured Projects"
@@ -1129,28 +1172,28 @@ function Projects() {
               );
             })}
           </div>
-          {reduceMotion ? (
+          {simplifyMotion ? (
             <p className="mx-auto mt-5 max-w-2xl text-center text-sm font-semibold leading-7 text-white/58">
               {activeCategory.summary}
             </p>
           ) : (
-          <AnimatePresence mode="wait">
-            <motion.p
-              key={activeCategory.id}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
-              transition={{ duration: 0.36, ease: [0.16, 1, 0.3, 1] }}
-              className="mx-auto mt-5 max-w-2xl text-center text-sm font-semibold leading-7 text-white/58"
-            >
-              {activeCategory.summary}
-            </motion.p>
-          </AnimatePresence>
+            <AnimatePresence mode="wait">
+              <motion.p
+                key={activeCategory.id}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                transition={{ duration: 0.36, ease: [0.16, 1, 0.3, 1] }}
+                className="mx-auto mt-5 max-w-2xl text-center text-sm font-semibold leading-7 text-white/58"
+              >
+                {activeCategory.summary}
+              </motion.p>
+            </AnimatePresence>
           )}
         </Reveal>
         {activeCategory.id === "graphics" ? (
           <GraphicsSamples />
-        ) : reduceMotion ? (
+        ) : simplifyMotion ? (
           <div key={activeCategory.id} className="mt-14 grid gap-6 lg:grid-cols-3">
             {projectCards}
           </div>
@@ -1193,7 +1236,7 @@ function ReviewProofCard({ review, index }) {
         alt={review.alt}
         loading={index < 2 ? "eager" : "lazy"}
         decoding="async"
-        fetchPriority={index < 2 ? "high" : "low"}
+        fetchpriority={index < 2 ? "high" : "low"}
         sizes="(min-width: 1024px) 30vw, (min-width: 768px) 46vw, 92vw"
       />
     </>
@@ -1270,7 +1313,7 @@ function Contact() {
   );
 
   return (
-    <section id="contact" className="section-wrap pb-12">
+    <section id="contact" className="section-wrap contact-section pb-12">
       <div className="mx-auto max-w-6xl px-5 sm:px-6 lg:px-8">
         <Reveal>
           <div className="contact-shell relative overflow-hidden p-7 sm:p-10 lg:p-14">
@@ -1426,7 +1469,7 @@ function PageHero({ eyebrow, title, copy, titleClassName = "", children }) {
       <div className="page-hero-grid absolute inset-0 opacity-35" />
       <div className="relative z-10 mx-auto max-w-6xl">
         <Reveal>
-          <p className="mb-5 text-xs font-semibold uppercase tracking-[0.44em] text-violet-aura">{eyebrow}</p>
+          <p className="page-hero-eyebrow mb-5 text-xs font-semibold uppercase tracking-[0.44em] text-violet-aura">{eyebrow}</p>
           <h1 className={`page-hero-title font-display font-bold text-frost ${titleClassName}`}>
             {title}
           </h1>
