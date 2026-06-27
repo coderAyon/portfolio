@@ -19,6 +19,7 @@ import {
   Palette,
   PenTool,
   Phone,
+  Share2,
   Smartphone,
   Sparkle,
   Star,
@@ -33,6 +34,16 @@ const navItems = [
   { label: "Profile", page: "profile" },
   { label: "Contact", page: "home", section: "contact" },
 ];
+
+function navContextTitle(page, section) {
+  if (page === "projects") return "Featured Projects";
+  if (page === "reviews") return "Reviews";
+  if (page === "profile") return "Profile";
+  if (page === "home" && section === "contact") return "Contact";
+  if (page === "home" && section === "skills") return "Skills";
+  if (page === "home" && section === "about") return "About Me";
+  return "";
+}
 
 const appBasePath = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
 const appAssetBase = import.meta.env.BASE_URL || "/";
@@ -192,7 +203,7 @@ const projectCategories = [
         type: "Android Finance App",
         accent: "from-emerald-400 to-orange-500",
         text: "A simple cash-flow companion for tracking daily money movement and personal balances.",
-        appPreviewImage: assetHref("apps/previews/cashify.png?v=20260627"),
+        appPreviewImage: assetHref("apps/previews/cashify.png?v=2026062702"),
         apkUrl: assetHref("apps/apks/cashify.apk"),
         apkSize: "42 MB",
       },
@@ -201,16 +212,16 @@ const projectCategories = [
         type: "Android Utility App",
         accent: "from-cyan-300 to-sky-500",
         text: "A focused note-taking app for quick writing, lightweight organization, and everyday reminders.",
-        appPreviewImage: assetHref("apps/previews/notes.png?v=20260627"),
+        appPreviewImage: assetHref("apps/previews/notes.png?v=2026062702"),
         apkUrl: assetHref("apps/apks/notes.apk"),
         apkSize: "28 MB",
       },
       {
-        title: "Unit Converter App",
+        title: "Unit Converter",
         type: "Android Calculator App",
         accent: "from-lime-300 to-orange-500",
         text: "A practical converter for common units with fast inputs, clear results, and a clean mobile flow.",
-        appPreviewImage: assetHref("apps/previews/unit-converter.png?v=20260627"),
+        appPreviewImage: assetHref("apps/previews/unit-converter.png?v=2026062702"),
         apkUrl: assetHref("apps/apks/unit-converter.apk"),
         apkSize: "9 MB",
       },
@@ -415,10 +426,11 @@ function SectionLabel({ eyebrow, title, copy }) {
   );
 }
 
-function ChromeNav({ currentPage, onNavigate }) {
+function ChromeNav({ currentPage, currentSection, onNavigate }) {
   const [open, setOpen] = useState(false);
   const [navProfile, setNavProfile] = useState(defaultProfile);
   const { reduceMotion } = useMotionPreferences();
+  const currentTitle = navContextTitle(currentPage, currentSection);
 
   useEffect(() => {
     setNavProfile(readSavedProfile());
@@ -474,6 +486,7 @@ function ChromeNav({ currentPage, onNavigate }) {
           ))}
         </div>
         <div className="flex items-center gap-2">
+          {currentTitle ? <span className="nav-current-label">{currentTitle}</span> : null}
           <a
             href={routeHref("home", "contact")}
             className="hidden rounded-full bg-frost px-5 py-2.5 text-sm font-bold text-night transition hover:bg-white md:block"
@@ -1066,6 +1079,61 @@ function ProjectCard({ project, index, onSelect }) {
   const { isMobile, reduceMotion } = useMotionPreferences();
   const simplifyMotion = reduceMotion || isMobile;
   const isDownloadableApp = Boolean(project.apkUrl);
+  const [copiedLiveUrl, setCopiedLiveUrl] = useState(false);
+  const copyTimerRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimerRef.current) {
+        window.clearTimeout(copyTimerRef.current);
+      }
+    };
+  }, []);
+
+  const handleCopyLiveUrl = async () => {
+    if (!project.liveUrl) return;
+
+    let copied = false;
+
+    const textarea = document.createElement("textarea");
+    textarea.value = project.liveUrl;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "fixed";
+    textarea.style.top = "-9999px";
+    textarea.style.left = "-9999px";
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+
+    try {
+      copied = document.execCommand("copy");
+    } catch {
+      copied = false;
+    } finally {
+      document.body.removeChild(textarea);
+    }
+
+    if (!copied && navigator.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(project.liveUrl);
+        copied = true;
+      } catch {
+        copied = false;
+      }
+    }
+
+    setCopiedLiveUrl(true);
+
+    if (copyTimerRef.current) {
+      window.clearTimeout(copyTimerRef.current);
+    }
+
+    copyTimerRef.current = window.setTimeout(() => {
+      setCopiedLiveUrl(false);
+      copyTimerRef.current = null;
+    }, copied ? 1600 : 2200);
+  };
+
   const content = (
     <>
       <ProjectVisual accent={project.accent} index={index} project={project} />
@@ -1102,9 +1170,15 @@ function ProjectCard({ project, index, onSelect }) {
                 </a>
               ) : null}
               {project.liveUrl ? (
-                <a href={project.liveUrl} target="_blank" rel="noreferrer" className="project-icon-link" aria-label={`${project.title} live website`}>
-                  <ExternalLink className="h-4 w-4" />
-                </a>
+                <button
+                  type="button"
+                  className={`project-icon-link ${copiedLiveUrl ? "project-icon-link-copied" : ""}`}
+                  aria-label={copiedLiveUrl ? `${project.title} link copied` : `Copy ${project.title} live link`}
+                  title={copiedLiveUrl ? "Link copied" : "Copy link"}
+                  onClick={handleCopyLiveUrl}
+                >
+                  <Share2 className="h-4 w-4" />
+                </button>
               ) : null}
             </div>
           </>
@@ -1575,6 +1649,7 @@ export default function App() {
     [isMobile, prefersReducedMotion, reduceMotion],
   );
   const [page, setPage] = useState(getInitialPage);
+  const [activeSection, setActiveSection] = useState(() => (typeof window === "undefined" ? "" : window.location.hash.replace("#", "")));
   const [pendingScroll, setPendingScroll] = useState(null);
   const [exitCompleteCount, setExitCompleteCount] = useState(0);
   const activePage = normalizePage(page);
@@ -1593,6 +1668,7 @@ export default function App() {
     }
 
     setPage(nextPage);
+    setActiveSection(section ?? "");
     setPendingScroll({
       section,
       isRouteChange,
@@ -1613,6 +1689,7 @@ export default function App() {
       }
 
       setPage(nextPage);
+      setActiveSection(window.location.hash.replace("#", ""));
       setPendingScroll({
         section: window.location.hash.replace("#", ""),
         isRouteChange,
@@ -1625,6 +1702,62 @@ export default function App() {
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
   }, [exitCompleteCount, page, reduceMotion]);
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      setActiveSection(window.location.hash.replace("#", ""));
+    };
+
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, []);
+
+  useEffect(() => {
+    if (activePage !== "home") return undefined;
+    if (pendingScroll) return undefined;
+
+    let frameId = null;
+
+    const updateSectionFromScroll = () => {
+      frameId = null;
+
+      const navBottom = document.querySelector(".site-nav")?.getBoundingClientRect().bottom ?? 0;
+      const activationLine = navBottom + Math.min(window.innerHeight * 0.28, 220);
+      const lowerLimit = navBottom + 16;
+      const sectionIds = ["about", "skills", "contact"];
+      let nextSection = "";
+
+      sectionIds.forEach((sectionId) => {
+        const element = document.getElementById(sectionId);
+        if (!element) return;
+
+        const rect = element.getBoundingClientRect();
+        if (rect.top <= activationLine && rect.bottom > lowerLimit) {
+          nextSection = sectionId;
+        }
+      });
+
+      setActiveSection((currentSection) => (currentSection === nextSection ? currentSection : nextSection));
+    };
+
+    const scheduleUpdate = () => {
+      if (frameId !== null) return;
+      frameId = window.requestAnimationFrame(updateSectionFromScroll);
+    };
+
+    scheduleUpdate();
+    window.addEventListener("scroll", scheduleUpdate, { passive: true });
+    window.addEventListener("resize", scheduleUpdate);
+
+    return () => {
+      if (frameId !== null) {
+        window.cancelAnimationFrame(frameId);
+      }
+
+      window.removeEventListener("scroll", scheduleUpdate);
+      window.removeEventListener("resize", scheduleUpdate);
+    };
+  }, [activePage, pendingScroll]);
 
   useEffect(() => {
     if (!pendingScroll) return undefined;
@@ -1687,7 +1820,7 @@ export default function App() {
     <MotionPreferenceContext.Provider value={motionPreferences}>
       <main className="min-h-screen overflow-x-clip bg-night text-white antialiased">
         <ScrollProgress />
-        <ChromeNav currentPage={activePage} onNavigate={navigate} />
+        <ChromeNav currentPage={activePage} currentSection={activeSection} onNavigate={navigate} />
         {reduceMotion ? (
           <div className="page-transition-layer" key={activePage}>
             {pageContent}
@@ -1714,7 +1847,10 @@ export default function App() {
           aria-label="Contact on WhatsApp"
           title="WhatsApp"
         >
-          <MessageCircle className="h-6 w-6" />
+          <span className="whatsapp-mark" aria-hidden="true">
+            <MessageCircle className="whatsapp-mark-bubble" />
+            <Phone className="whatsapp-mark-phone" />
+          </span>
         </a>
       </main>
     </MotionPreferenceContext.Provider>
