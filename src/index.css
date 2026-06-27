@@ -172,7 +172,7 @@ body {
   inset: 0;
   z-index: 2;
   border-radius: inherit;
-  padding: 2px;
+  padding: 1px;
   background: conic-gradient(
     from 130deg,
     rgba(124, 58, 237, 0.18),
@@ -855,11 +855,15 @@ body {
     linear-gradient(145deg, rgba(80, 30, 140, 0.72), rgba(21, 5, 46, 0.9));
 }
 
+.project-visual-app .project-visual-glow {
+  display: none;
+}
+
 .project-app-preview-frame {
   position: relative;
   z-index: 2;
   display: grid;
-  width: min(100%, 15.25rem);
+  width: min(100%, 18.25rem);
   aspect-ratio: 1;
   place-items: center;
   overflow: hidden;
@@ -1842,6 +1846,58 @@ body {
 }
 
 @media (min-width: 768px) {
+  .site-nav,
+  .glass-panel,
+  .skill-card,
+  .project-card,
+  .contact-shell,
+  .project-tabs,
+  .graphics-subtabs,
+  .project-visual-header,
+  .project-visual-preview,
+  .project-modal-backdrop,
+  .project-modal-close,
+  .project-modal-preview-caption,
+  .review-stats,
+  .review-proof-card,
+  .page-cta,
+  .profile-identity-card,
+  .profile-academic-card,
+  .profile-summary-card {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .section-glow {
+    filter: none;
+    background: radial-gradient(circle, rgba(155, 77, 255, 0.34) 0%, rgba(155, 77, 255, 0.16) 38%, transparent 70%);
+  }
+
+  .hero-coverflow-glow,
+  .project-visual-glow {
+    filter: none;
+  }
+
+  .skill-card {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 19rem;
+  }
+
+  .project-card {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 38rem;
+  }
+
+  .review-proof-card,
+  .graphics-sample-card {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 24rem;
+  }
+
+  .review-proof-card {
+    will-change: auto;
+  }
+
   .review-proof-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

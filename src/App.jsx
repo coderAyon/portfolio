@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useInView, useScroll, useSpring, useTransform } from "framer-motion";
 import {
@@ -129,7 +129,7 @@ function normalizePage(page) {
 
 function afterRoutePaint(callback) {
   requestAnimationFrame(() => {
-    requestAnimationFrame(callback);
+    callback();
   });
 }
 
@@ -162,7 +162,8 @@ function scrollSectionIntoViewIfNeeded(section, behavior = "auto") {
   if (!element) return;
 
   const top = element.getBoundingClientRect().top;
-  if (Math.abs(top) < 2) return;
+  const scrollMarginTop = Number.parseFloat(window.getComputedStyle(element).scrollMarginTop) || 0;
+  if (Math.abs(top - scrollMarginTop) < 2) return;
 
   element.scrollIntoView({ behavior, block: "start" });
 }
@@ -404,7 +405,7 @@ function Reveal({ children, delay = 0, className = "" }) {
         y: 0,
         scale: 1,
       }}
-      viewport={{ once: false, margin: isMobile ? "-6% 0px -6% 0px" : "-10% 0px -10% 0px", amount: 0.16 }}
+      viewport={{ once: !isMobile, margin: isMobile ? "-6% 0px -6% 0px" : "-10% 0px -10% 0px", amount: 0.16 }}
       transition={{ duration: isMobile ? 0.42 : 0.62, delay: revealDelay, ease: [0.16, 1, 0.3, 1] }}
       className={revealClassName}
     >
@@ -1650,7 +1651,6 @@ export default function App() {
   const [page, setPage] = useState(getInitialPage);
   const [activeSection, setActiveSection] = useState(() => (typeof window === "undefined" ? "" : window.location.hash.replace("#", "")));
   const [pendingScroll, setPendingScroll] = useState(null);
-  const [exitCompleteCount, setExitCompleteCount] = useState(0);
   const activePage = normalizePage(page);
 
   const navigate = (nextPage, section) => {
@@ -1662,8 +1662,7 @@ export default function App() {
     }
 
     if (isRouteChange) {
-      temporarilyDisableSmoothScroll(760);
-      scrollToTopIfNeeded("auto");
+      temporarilyDisableSmoothScroll(260);
     }
 
     setPage(nextPage);
@@ -1672,8 +1671,6 @@ export default function App() {
       section,
       isRouteChange,
       targetPage: normalizePage(nextPage),
-      startExitCompleteCount: exitCompleteCount,
-      shouldWaitForExit: isRouteChange && !reduceMotion,
     });
   };
 
@@ -1683,8 +1680,7 @@ export default function App() {
       const isRouteChange = normalizePage(page) !== normalizePage(nextPage);
 
       if (isRouteChange) {
-        temporarilyDisableSmoothScroll(760);
-        scrollToTopIfNeeded("auto");
+        temporarilyDisableSmoothScroll(260);
       }
 
       setPage(nextPage);
@@ -1693,14 +1689,12 @@ export default function App() {
         section: window.location.hash.replace("#", ""),
         isRouteChange,
         targetPage: normalizePage(nextPage),
-        startExitCompleteCount: exitCompleteCount,
-        shouldWaitForExit: isRouteChange && !reduceMotion,
       });
     };
 
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, [exitCompleteCount, page, reduceMotion]);
+  }, [page]);
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -1758,36 +1752,43 @@ export default function App() {
     };
   }, [activePage, pendingScroll]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!pendingScroll) return undefined;
-    if (pendingScroll.isRouteChange) {
-      if (activePage !== pendingScroll.targetPage) return undefined;
-      if (pendingScroll.shouldWaitForExit && exitCompleteCount <= pendingScroll.startExitCompleteCount) return undefined;
+    if (!pendingScroll.isRouteChange) return undefined;
+    if (activePage !== pendingScroll.targetPage) return undefined;
+
+    temporarilyDisableSmoothScroll(240);
+
+    if (pendingScroll.section) {
+      scrollSectionIntoViewIfNeeded(pendingScroll.section, "auto");
+    } else {
+      scrollToTopIfNeeded("auto");
     }
 
-    const timeoutId = window.setTimeout(
-      () => {
-        afterRoutePaint(() => {
-          const behavior = pendingScroll.isRouteChange || isMobile ? "auto" : "smooth";
+    setPendingScroll(null);
+    return undefined;
+  }, [activePage, pendingScroll]);
 
-          if (pendingScroll.isRouteChange) {
-            temporarilyDisableSmoothScroll(240);
-          }
+  useEffect(() => {
+    if (!pendingScroll) return undefined;
+    if (pendingScroll.isRouteChange) return undefined;
 
-          if (pendingScroll.section) {
-            scrollSectionIntoViewIfNeeded(pendingScroll.section, behavior);
-          } else {
-            scrollToTopIfNeeded(behavior);
-          }
+    const timeoutId = window.setTimeout(() => {
+      afterRoutePaint(() => {
+        const behavior = isMobile ? "auto" : "smooth";
 
-          setPendingScroll(null);
-        });
-      },
-      0,
-    );
+        if (pendingScroll.section) {
+          scrollSectionIntoViewIfNeeded(pendingScroll.section, behavior);
+        } else {
+          scrollToTopIfNeeded(behavior);
+        }
+
+        setPendingScroll(null);
+      });
+    }, 0);
 
     return () => window.clearTimeout(timeoutId);
-  }, [activePage, exitCompleteCount, isMobile, pendingScroll]);
+  }, [isMobile, pendingScroll]);
 
   useEffect(() => {
     if (activePage !== "home") return undefined;
@@ -1825,18 +1826,15 @@ export default function App() {
             {pageContent}
           </div>
         ) : (
-          <AnimatePresence mode="wait" initial={false} onExitComplete={() => setExitCompleteCount((value) => value + 1)}>
-            <motion.div
-              className="page-transition-layer"
-              key={activePage}
-              initial={{ opacity: 0, scale: 0.996 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.998 }}
-              transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
-            >
-              {pageContent}
-            </motion.div>
-          </AnimatePresence>
+          <motion.div
+            className="page-transition-layer"
+            key={activePage}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+          >
+            {pageContent}
+          </motion.div>
         )}
         <a
           href="https://wa.me/8801630802119"
