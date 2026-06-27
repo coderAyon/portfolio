@@ -1996,8 +1996,8 @@ body {
     right: auto;
     left: auto;
     display: block;
-    width: min(100%, 22rem);
-    height: 18rem;
+    width: min(100%, 22.8rem);
+    height: 18.75rem;
     min-height: 0;
     margin: 2.25rem auto 0;
     perspective: none;
@@ -2010,7 +2010,7 @@ body {
   }
 
   .hero-coverflow-mobile .hero-cover-card {
-    width: clamp(6.9rem, 34vw, 8.1rem);
+    width: clamp(7.25rem, 36vw, 8.65rem);
     box-shadow:
       0 14px 32px rgba(0, 0, 0, 0.42),
       0 0 18px rgba(155, 77, 255, 0.28);

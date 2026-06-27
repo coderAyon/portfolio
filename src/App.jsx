@@ -554,18 +554,18 @@ function HeroCoverflow({ className = "" }) {
   const shellRef = useRef(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [paused, setPaused] = useState(false);
-  const { isMobile, reduceMotion } = useMotionPreferences();
+  const { isMobile, prefersReducedMotion, reduceMotion } = useMotionPreferences();
   const isInView = useInView(shellRef, { margin: "160px 0px" });
   const total = heroCoverPhotos.length;
 
   useEffect(() => {
-    if (paused || reduceMotion || !isInView) return undefined;
+    if (paused || prefersReducedMotion || !isInView) return undefined;
     const timerId = window.setInterval(() => {
       setActiveIndex((current) => (current + 1) % total);
     }, 3200);
 
     return () => window.clearInterval(timerId);
-  }, [isInView, paused, reduceMotion, total]);
+  }, [isInView, paused, prefersReducedMotion, total]);
 
   const goTo = (nextIndex) => {
     const next = (nextIndex + total) % total;
@@ -577,7 +577,7 @@ function HeroCoverflow({ className = "" }) {
   return (
     <motion.div
       ref={shellRef}
-      className={`hero-coverflow-shell ${reduceMotion ? "hero-coverflow-reduced" : ""} ${className}`}
+      className={`hero-coverflow-shell ${prefersReducedMotion ? "hero-coverflow-reduced" : ""} ${className}`}
       initial={reduceMotion ? false : { opacity: 0, x: 34, scale: 0.96 }}
       animate={{ opacity: 1, x: 0, scale: 1 }}
       transition={{ duration: reduceMotion ? 0 : 0.78, ease: [0.16, 1, 0.3, 1] }}
