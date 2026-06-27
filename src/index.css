@@ -117,6 +117,7 @@ body {
   min-height: 22rem;
   perspective: 1120px;
   translate: 0 -50%;
+  contain: layout;
 }
 
 .hero-coverflow-mobile {
@@ -158,6 +159,7 @@ body {
     inset 0 0 18px rgba(216, 180, 254, 0.18);
   isolation: isolate;
   transform-style: preserve-3d;
+  will-change: transform, opacity;
   transition:
     opacity 520ms ease,
     transform 680ms cubic-bezier(0.16, 1, 0.3, 1),
@@ -266,6 +268,10 @@ body {
 
 .hero-coverflow-reduced .hero-coverflow-orbit {
   animation: none;
+}
+
+.hero-coverflow-paused .hero-coverflow-orbit {
+  animation-play-state: paused;
 }
 
 .hero-coverflow-orbit {
@@ -720,11 +726,6 @@ body {
     0 22px 52px rgba(0, 0, 0, 0.42),
     0 0 40px rgba(192, 132, 255, 0.28);
   outline: none;
-}
-
-.graphics-sample-grid:has(.graphics-sample-card:hover) .graphics-sample-card:not(:hover),
-.graphics-sample-grid:has(.graphics-sample-card:focus-visible) .graphics-sample-card:not(:focus-visible) {
-  opacity: 0.56;
 }
 
 .graphics-sample-preview {
@@ -2322,11 +2323,6 @@ body {
   .review-proof-image,
   .project-visual-preview img {
     filter: none;
-  }
-
-  .graphics-sample-grid:has(.graphics-sample-card:hover) .graphics-sample-card:not(:hover),
-  .graphics-sample-grid:has(.graphics-sample-card:focus-visible) .graphics-sample-card:not(:focus-visible) {
-    opacity: 1;
   }
 
   .graphics-sample-card {

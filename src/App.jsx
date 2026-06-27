@@ -578,7 +578,7 @@ function HeroCoverflow({ className = "" }) {
   return (
     <motion.div
       ref={shellRef}
-      className={`hero-coverflow-shell ${prefersReducedMotion ? "hero-coverflow-reduced" : ""} ${className}`}
+      className={`hero-coverflow-shell ${prefersReducedMotion ? "hero-coverflow-reduced" : ""} ${!isInView ? "hero-coverflow-paused" : ""} ${className}`}
       initial={reduceMotion ? false : { opacity: 0, x: 34, scale: 0.96 }}
       animate={{ opacity: 1, x: 0, scale: 1 }}
       transition={{ duration: reduceMotion ? 0 : 0.78, ease: [0.16, 1, 0.3, 1] }}
@@ -972,7 +972,7 @@ function GraphicsSamples() {
   const [activeGraphicsId, setActiveGraphicsId] = useState(graphicsWorkTypes[0].id);
   const { isMobile, reduceMotion } = useMotionPreferences();
   const simplifyMotion = reduceMotion || isMobile;
-  const eagerSampleLimit = isMobile ? 1 : 3;
+  const eagerSampleLimit = isMobile ? 1 : 0;
   const activeGraphics = graphicsWorkTypes.find((category) => category.id === activeGraphicsId) ?? graphicsWorkTypes[0];
   const sampleCards = activeGraphics.samples.map((sample, index) => (
     <article
