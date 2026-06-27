@@ -1835,27 +1835,10 @@ body {
     0 8px 20px rgba(0, 0, 0, 0.18);
 }
 
-.whatsapp-mark {
-  position: relative;
-  display: grid;
-  height: 1.6rem;
-  width: 1.6rem;
-  place-items: center;
-}
-
-.whatsapp-mark-bubble {
-  grid-area: 1 / 1;
-  height: 1.6rem;
-  width: 1.6rem;
-  stroke-width: 2.4;
-}
-
-.whatsapp-mark-phone {
-  grid-area: 1 / 1;
-  height: 0.82rem;
-  width: 0.82rem;
-  translate: 0.02rem -0.03rem;
-  stroke-width: 2.8;
+.whatsapp-icon {
+  display: block;
+  height: 1.55rem;
+  width: 1.55rem;
 }
 
 @media (min-width: 768px) {
@@ -2064,6 +2047,18 @@ body {
   }
 
   .profile-welcome-title {
+    margin-right: auto;
+    margin-left: auto;
+    text-align: center;
+    text-align-last: center;
+  }
+
+  .profile-kicker {
+    display: none;
+  }
+
+  .profile-name {
+    margin-top: 1.45rem;
     margin-right: auto;
     margin-left: auto;
     text-align: center;
