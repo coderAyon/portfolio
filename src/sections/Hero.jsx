@@ -20,17 +20,17 @@ export default function Hero({ onNavigate }) {
       <div className="hero-grid pointer-events-none absolute inset-0 opacity-[0.22]" />
       <div className="relative z-10 mx-auto flex min-h-[100svh] max-w-6xl items-center px-5 pb-28 pt-32 sm:px-6 lg:px-8">
         <div className="hero-copy-block hero-copy-enter max-w-4xl">
-          <div className="mb-7 inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/[0.055] px-4 py-2 text-sm font-semibold text-white/72 shadow-glass">
+          <div className="motion-item mb-7 inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/[0.055] px-4 py-2 text-sm font-semibold text-white/72 shadow-glass">
             <span className="h-2 w-2 rounded-full bg-[#1dbf73] shadow-[0_0_16px_rgba(29,191,115,.95)]" />
             Welcome to premium productivity
           </div>
-          <h1 className="max-w-5xl text-balance font-display text-6xl font-bold leading-[0.92] text-frost sm:text-7xl md:text-8xl lg:text-[8.8rem]">
+          <h1 className="motion-item max-w-5xl text-balance font-display text-6xl font-bold leading-[0.92] text-frost sm:text-7xl md:text-8xl lg:text-[8.8rem]" style={{ "--item-delay": "120ms" }}>
             Ayon Roy
           </h1>
-          <p className="mt-8 max-w-2xl text-lg leading-8 text-white/68 sm:text-xl">
+          <p className="motion-item mt-8 max-w-2xl text-lg leading-8 text-white/68 sm:text-xl" style={{ "--item-delay": "240ms" }}>
             I shape bold digital visuals with a futuristic design language, blending graphic design instinct with a growing computer science foundation.
           </p>
-          <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="motion-item mt-10 flex flex-col gap-3 sm:flex-row sm:items-center" style={{ "--item-delay": "360ms" }}>
             <a
               href={routeHref("projects")}
               className="group inline-flex items-center justify-center gap-3 rounded-full bg-frost px-7 py-4 text-sm font-extrabold uppercase tracking-[0.18em] text-night transition duration-300 hover:-translate-y-1 hover:bg-white"

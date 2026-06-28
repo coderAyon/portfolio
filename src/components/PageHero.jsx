@@ -7,10 +7,10 @@ export default function PageHero({ eyebrow, title, copy, titleClassName = "", ch
       <div className="page-hero-grid absolute inset-0 opacity-35" />
       <div className="relative z-10 mx-auto max-w-6xl">
         <Reveal>
-          <p className="page-hero-eyebrow mb-5 text-xs font-semibold uppercase tracking-[0.44em] text-violet-aura">{eyebrow}</p>
-          <h1 className={`page-hero-title font-display font-bold text-frost ${titleClassName}`}>{title}</h1>
-          {copy ? <p className="page-hero-copy mt-7 max-w-3xl text-lg leading-8 text-white/66 sm:text-xl">{copy}</p> : null}
-          {children ? <div className="mt-9">{children}</div> : null}
+          <p className="motion-item page-hero-eyebrow mb-5 text-xs font-semibold uppercase tracking-[0.44em] text-violet-aura">{eyebrow}</p>
+          <h1 className={`motion-item page-hero-title font-display font-bold text-frost ${titleClassName}`} style={{ "--item-delay": "90ms" }}>{title}</h1>
+          {copy ? <p className="motion-item page-hero-copy mt-7 max-w-3xl text-lg leading-8 text-white/66 sm:text-xl" style={{ "--item-delay": "180ms" }}>{copy}</p> : null}
+          {children ? <div className="motion-item mt-9" style={{ "--item-delay": "270ms" }}>{children}</div> : null}
         </Reveal>
       </div>
     </section>

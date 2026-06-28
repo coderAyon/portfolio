@@ -17,14 +17,14 @@ function ProjectVisual({ accent, index, project }) {
     <div className={`project-visual ${hasWebsitePreview ? "project-visual-website" : ""} ${hasAppPreview ? "project-visual-app" : ""}`}>
       <div className={`project-visual-glow absolute inset-x-8 top-8 h-28 rounded-full bg-gradient-to-r ${accent} opacity-60 blur-3xl`} />
       {project?.header && !hasWebsitePreview && !hasAppPreview ? (
-        <div className="project-visual-header">
+        <div className="motion-item project-visual-header">
           <span>{project.status}</span>
           <strong>{project.header}</strong>
           <p>{project.title}</p>
         </div>
       ) : null}
       {hasWebsitePreview ? (
-        <div className="project-browser-frame">
+        <div className="motion-item project-browser-frame">
           <div className="project-browser-toolbar" aria-hidden="true">
             <span />
             <span />
@@ -35,7 +35,7 @@ function ProjectVisual({ accent, index, project }) {
         </div>
       ) : null}
       {hasAppPreview ? (
-        <div className="project-app-preview-frame">
+        <div className="motion-item project-app-preview-frame">
           <img
             src={project.appPreviewImage}
             alt={`${project.title} app preview`}
@@ -48,8 +48,8 @@ function ProjectVisual({ accent, index, project }) {
       ) : null}
       {!hasWebsitePreview && !hasAppPreview ? (
         <>
-          <div className={floatingPanelClassName} />
-          <div className={floatingOrbClassName} />
+          <div className={`motion-item ${floatingPanelClassName}`} />
+          <div className={`motion-item ${floatingOrbClassName}`} style={{ "--item-delay": "120ms" }} />
           <div className="absolute inset-x-10 bottom-10 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
           <div className="absolute left-1/2 top-1/2 h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/12" />
           <Sparkle className="absolute right-12 top-12 h-6 w-6 text-frost/70" />
@@ -152,7 +152,7 @@ function GraphicsSamples() {
     <div className="mt-12">
       <Reveal className="mx-auto max-w-4xl">
         <div className="graphics-subtabs" role="tablist" aria-label="Graphics design categories">
-          {graphicsWorkTypes.map((category) => {
+          {graphicsWorkTypes.map((category, index) => {
             const active = category.id === activeGraphics.id;
             return (
               <button
@@ -160,7 +160,8 @@ function GraphicsSamples() {
                 type="button"
                 role="tab"
                 aria-selected={active}
-                className={`graphics-subtab ${active ? "graphics-subtab-active" : ""}`}
+                className={`motion-item graphics-subtab ${active ? "graphics-subtab-active" : ""}`}
+                style={{ "--item-delay": `${index * 80}ms` }}
                 onClick={() => setActiveGraphicsId(category.id)}
               >
                 {category.label}
@@ -168,51 +169,53 @@ function GraphicsSamples() {
             );
           })}
         </div>
-        <p className="mx-auto mt-5 max-w-2xl text-center text-sm font-semibold leading-7 text-white/58">
+        <p className="motion-item mx-auto mt-5 max-w-2xl text-center text-sm font-semibold leading-7 text-white/58" style={{ "--item-delay": "260ms" }}>
           {activeGraphics.summary}
         </p>
       </Reveal>
 
-      <div key={activeGraphics.id} className="graphics-sample-grid mt-12">
-        {activeGraphics.samples.map((sample, index) => (
-          <article
-            key={sample.id}
-            className="graphics-sample-card"
-            style={{ "--sample-delay": `${Math.min(index, 8) * 18}ms` }}
-            tabIndex={0}
-          >
-            <div
-              className={`graphics-sample-preview ${
-                sample.image
-                  ? `graphics-sample-preview-image ${sample.orientation === "portrait" ? "graphics-sample-preview-portrait" : ""}`
-                  : `bg-gradient-to-br ${activeGraphics.accent}`
-              }`}
+      <Reveal delay={0.1} className="mt-12">
+        <div key={activeGraphics.id} className="graphics-sample-grid">
+          {activeGraphics.samples.map((sample, index) => (
+            <article
+              key={sample.id}
+              className="motion-item graphics-sample-card"
+              style={{ "--item-delay": `${Math.min(index, 10) * 55}ms`, "--sample-delay": `${Math.min(index, 8) * 18}ms` }}
+              tabIndex={0}
             >
-              {sample.image ? (
-                <img
-                  src={sample.image}
-                  alt={sample.title}
-                  loading={index < eagerSampleLimit ? "eager" : "lazy"}
-                  decoding="async"
-                  fetchpriority={index < eagerSampleLimit ? "high" : "low"}
-                  sizes="(min-width: 1024px) 31vw, (min-width: 768px) 48vw, 92vw"
-                />
-              ) : (
-                <>
-                  <div className="graphics-sample-orbit" />
-                  <div className="graphics-sample-orbit graphics-sample-orbit-two" />
-                  <span>{sample.number}</span>
-                </>
-              )}
-            </div>
-            <div className="graphics-sample-meta">
-              <p>{sample.label}</p>
-              <h3>{sample.title}</h3>
-              <span>{sample.note}</span>
-            </div>
-          </article>
-        ))}
-      </div>
+              <div
+                className={`graphics-sample-preview ${
+                  sample.image
+                    ? `graphics-sample-preview-image ${sample.orientation === "portrait" ? "graphics-sample-preview-portrait" : ""}`
+                    : `bg-gradient-to-br ${activeGraphics.accent}`
+                }`}
+              >
+                {sample.image ? (
+                  <img
+                    src={sample.image}
+                    alt={sample.title}
+                    loading={index < eagerSampleLimit ? "eager" : "lazy"}
+                    decoding="async"
+                    fetchpriority={index < eagerSampleLimit ? "high" : "low"}
+                    sizes="(min-width: 1024px) 31vw, (min-width: 768px) 48vw, 92vw"
+                  />
+                ) : (
+                  <>
+                    <div className="graphics-sample-orbit" />
+                    <div className="graphics-sample-orbit graphics-sample-orbit-two" />
+                    <span>{sample.number}</span>
+                  </>
+                )}
+              </div>
+              <div className="graphics-sample-meta">
+                <p>{sample.label}</p>
+                <h3>{sample.title}</h3>
+                <span>{sample.note}</span>
+              </div>
+            </article>
+          ))}
+        </div>
+      </Reveal>
     </div>
   );
 }
@@ -274,15 +277,15 @@ function ProjectCard({ project, index, onSelect }) {
   };
 
   return (
-    <article className={`project-card ${isDownloadableApp ? "project-app-card" : ""}`}>
+    <article className={`motion-item project-card ${isDownloadableApp ? "project-app-card" : ""}`} style={{ "--item-delay": `${Math.min(index, 6) * 90}ms` }}>
       <ProjectVisual accent={project.accent} index={index} project={project} />
       <div className={`p-6 ${isDownloadableApp ? "project-app-content" : ""}`}>
         {isDownloadableApp ? (
           <>
-            <p className="project-app-type">{project.type}</p>
-            <h3 className="project-app-title">{project.title}</h3>
-            <p className="project-app-copy">{project.text}</p>
-            <div className="project-app-action-row">
+            <p className="motion-item project-app-type" style={{ "--item-delay": "120ms" }}>{project.type}</p>
+            <h3 className="motion-item project-app-title" style={{ "--item-delay": "190ms" }}>{project.title}</h3>
+            <p className="motion-item project-app-copy" style={{ "--item-delay": "260ms" }}>{project.text}</p>
+            <div className="motion-item project-app-action-row" style={{ "--item-delay": "330ms" }}>
               <div className="project-app-size">
                 <span>APK Size</span>
                 <strong>{project.apkSize}</strong>
@@ -295,10 +298,10 @@ function ProjectCard({ project, index, onSelect }) {
           </>
         ) : (
           <>
-            <p className="text-xs font-bold uppercase tracking-[0.32em] text-violet-aura">{project.type}</p>
-            <h3 className="mt-4 font-display text-2xl font-bold text-frost">{project.title}</h3>
-            <p className="mt-4 leading-7 text-white/58">{project.text}</p>
-            <div className="mt-7 flex flex-wrap items-center gap-3">
+            <p className="motion-item text-xs font-bold uppercase tracking-[0.32em] text-violet-aura" style={{ "--item-delay": "120ms" }}>{project.type}</p>
+            <h3 className="motion-item mt-4 font-display text-2xl font-bold text-frost" style={{ "--item-delay": "190ms" }}>{project.title}</h3>
+            <p className="motion-item mt-4 leading-7 text-white/58" style={{ "--item-delay": "260ms" }}>{project.text}</p>
+            <div className="motion-item mt-7 flex flex-wrap items-center gap-3" style={{ "--item-delay": "330ms" }}>
               <button type="button" className="project-mini-button" onClick={() => onSelect(project)}>
                 View Details
                 <ArrowUpRight className="h-4 w-4" />
@@ -342,7 +345,7 @@ export default function Projects() {
         />
         <Reveal delay={0.08} className="mx-auto mt-12 max-w-5xl">
           <div className="project-tabs" role="tablist" aria-label="Project categories">
-            {projectCategories.map((category) => {
+            {projectCategories.map((category, index) => {
               const Icon = category.icon;
               const active = category.id === activeCategory.id;
               return (
@@ -351,7 +354,8 @@ export default function Projects() {
                   type="button"
                   role="tab"
                   aria-selected={active}
-                  className={`project-tab ${active ? "project-tab-active" : ""}`}
+                  className={`motion-item project-tab ${active ? "project-tab-active" : ""}`}
+                  style={{ "--item-delay": `${index * 80}ms` }}
                   onClick={() => setActiveCategoryId(category.id)}
                 >
                   <Icon className="h-4 w-4" />
@@ -360,18 +364,20 @@ export default function Projects() {
               );
             })}
           </div>
-          <p className="mx-auto mt-5 max-w-2xl text-center text-sm font-semibold leading-7 text-white/58">
+          <p className="motion-item mx-auto mt-5 max-w-2xl text-center text-sm font-semibold leading-7 text-white/58" style={{ "--item-delay": "260ms" }}>
             {activeCategory.summary}
           </p>
         </Reveal>
         {activeCategory.id === "graphics" ? (
           <GraphicsSamples />
         ) : (
-          <div key={activeCategory.id} className="mt-14 grid gap-6 lg:grid-cols-3">
-            {activeCategory.projects.map((project, index) => (
-              <ProjectCard key={project.title} project={project} index={index} onSelect={setSelectedProject} />
-            ))}
-          </div>
+          <Reveal delay={0.1} className="mt-14">
+            <div key={activeCategory.id} className="grid gap-6 lg:grid-cols-3">
+              {activeCategory.projects.map((project, index) => (
+                <ProjectCard key={project.title} project={project} index={index} onSelect={setSelectedProject} />
+              ))}
+            </div>
+          </Reveal>
         )}
         <AnimatePresence>
           {selectedProject ? <ProjectDetailsModal project={selectedProject} onClose={() => setSelectedProject(null)} /> : null}

@@ -43,8 +43,8 @@ export default function Reviews() {
               ["10", "Clients Feedback"],
               ["4.8", "Average Rating"],
               ["Fiverr", "Verified Marketplace"],
-            ].map(([value, label]) => (
-              <div key={label} className="review-stat">
+            ].map(([value, label], index) => (
+              <div key={label} className="motion-item review-stat" style={{ "--item-delay": `${index * 90}ms` }}>
                 <span>{value}</span>
                 <p>{label}</p>
               </div>
@@ -53,8 +53,10 @@ export default function Reviews() {
         </Reveal>
         <div className="review-proof-grid mt-14">
           {fiverrReviews.map((review, index) => (
-            <Reveal key={review.image} delay={(index % 4) * 0.03}>
-              <ReviewProofCard review={review} index={index} />
+            <Reveal key={review.image} delay={(index % 4) * 0.05}>
+              <div className="motion-item">
+                <ReviewProofCard review={review} index={index} />
+              </div>
             </Reveal>
           ))}
         </div>

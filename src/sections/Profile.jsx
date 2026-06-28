@@ -25,26 +25,26 @@ export default function Profile() {
         <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-stretch">
           <Reveal className="h-full">
             <article className="profile-identity-card profile-identity-card-main">
-              <div className="profile-avatar">
+              <div className="motion-item profile-avatar">
                 {profile.photoDataUrl || profile.photoUrl ? (
                   <img src={profile.photoDataUrl || profile.photoUrl} alt={`${profile.name} profile`} />
                 ) : (
                   <span>AR</span>
                 )}
               </div>
-              <p className="profile-kicker mt-7 text-xs font-bold uppercase tracking-[0.38em] text-violet-aura">Public Profile</p>
-              <h2 className="profile-name mt-4 font-display text-5xl font-bold leading-none text-frost sm:text-6xl">{profile.name}</h2>
-              <p className="mt-5 text-lg leading-8 text-white/68">{profile.bio}</p>
+              <p className="motion-item profile-kicker mt-7 text-xs font-bold uppercase tracking-[0.38em] text-violet-aura" style={{ "--item-delay": "90ms" }}>Public Profile</p>
+              <h2 className="motion-item profile-name mt-4 font-display text-5xl font-bold leading-none text-frost sm:text-6xl" style={{ "--item-delay": "160ms" }}>{profile.name}</h2>
+              <p className="motion-item mt-5 text-lg leading-8 text-white/68" style={{ "--item-delay": "230ms" }}>{profile.bio}</p>
               <div className="mt-8 grid gap-3">
-                <a href={`tel:${profile.phone.replace(/\s/g, "")}`} className="profile-info-line">
+                <a href={`tel:${profile.phone.replace(/\s/g, "")}`} className="motion-item profile-info-line" style={{ "--item-delay": "310ms" }}>
                   <Phone className="h-5 w-5" />
                   <span>{profile.phone}</span>
                 </a>
-                <a href={`mailto:${profile.email}`} className="profile-info-line">
+                <a href={`mailto:${profile.email}`} className="motion-item profile-info-line" style={{ "--item-delay": "380ms" }}>
                   <Mail className="h-5 w-5" />
                   <span>{profile.email}</span>
                 </a>
-                <div className="profile-info-line">
+                <div className="motion-item profile-info-line" style={{ "--item-delay": "450ms" }}>
                   <MapPin className="h-5 w-5" />
                   <span>{profile.address}</span>
                 </div>
@@ -55,8 +55,8 @@ export default function Profile() {
           <div className="profile-detail-column grid gap-5">
             <Reveal delay={0.08}>
               <div className="profile-summary-grid">
-                {profileStats.map(([label, value]) => (
-                  <div key={label} className="profile-summary-card">
+                {profileStats.map(([label, value], index) => (
+                  <div key={label} className="motion-item profile-summary-card" style={{ "--item-delay": `${index * 90}ms` }}>
                     <p>{label}</p>
                     <strong>{value}</strong>
                   </div>
@@ -76,8 +76,8 @@ export default function Profile() {
                     ["Focus", profile.academicFocus],
                     ["Status", profile.academicStatus],
                     ["Study", "Studied CSE at Gono Bishwabidyalay"],
-                  ].map(([label, value]) => (
-                    <div key={label} className="profile-academic-row">
+                  ].map(([label, value], index) => (
+                    <div key={label} className="motion-item profile-academic-row" style={{ "--item-delay": `${120 + index * 80}ms` }}>
                       <span>{label}</span>
                       <p>{value}</p>
                     </div>

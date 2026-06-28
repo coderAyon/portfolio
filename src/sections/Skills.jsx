@@ -16,13 +16,13 @@ export default function Skills() {
           {skills.map((skill, index) => {
             const Icon = skill.icon;
             return (
-              <Reveal key={skill.label} delay={index * 0.04}>
-                <article className="skill-card group">
-                  <div className="mb-8 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] text-violet-aura transition group-hover:border-violet-aura/50 group-hover:text-frost">
+              <Reveal key={skill.label} delay={index * 0.05}>
+                <article className="motion-item skill-card group">
+                  <div className="motion-item mb-8 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] text-violet-aura transition group-hover:border-violet-aura/50 group-hover:text-frost" style={{ "--item-delay": "100ms" }}>
                     <Icon className="h-5 w-5" />
                   </div>
-                  <h3 className="font-display text-2xl font-bold text-frost">{skill.label}</h3>
-                  <p className="mt-4 leading-7 text-white/58">{skill.text}</p>
+                  <h3 className="motion-item font-display text-2xl font-bold text-frost" style={{ "--item-delay": "170ms" }}>{skill.label}</h3>
+                  <p className="motion-item mt-4 leading-7 text-white/58" style={{ "--item-delay": "240ms" }}>{skill.text}</p>
                 </article>
               </Reveal>
             );
