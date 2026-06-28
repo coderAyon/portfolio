@@ -18,7 +18,7 @@ export default function Hero({ onNavigate }) {
       ) : null}
       <div className="hero-readability absolute inset-0" />
       <div className="hero-grid pointer-events-none absolute inset-0 opacity-[0.22]" />
-      <div className="relative z-10 mx-auto flex min-h-[100svh] max-w-6xl items-center px-5 pb-28 pt-32 sm:px-6 lg:px-8">
+      <div className="relative z-20 mx-auto flex min-h-[100svh] max-w-6xl items-center px-5 pb-28 pt-32 sm:px-6 lg:px-8">
         <div className="hero-copy-block hero-copy-enter max-w-4xl">
           <div className="motion-item mb-7 inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/[0.055] px-4 py-2 text-sm font-semibold text-white/72 shadow-glass">
             <span className="h-2 w-2 rounded-full bg-[#1dbf73] shadow-[0_0_16px_rgba(29,191,115,.95)]" />
@@ -67,7 +67,7 @@ export default function Hero({ onNavigate }) {
           {isMobile ? <HeroCoverflow className="hero-coverflow-mobile" /> : null}
         </div>
       </div>
-      <div className="absolute bottom-0 left-0 right-0 z-10 h-32 bg-gradient-to-t from-night via-night/72 to-transparent" />
+      <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-[2] h-52 bg-gradient-to-t from-night via-night/80 to-transparent" />
       <div className="absolute bottom-9 left-1/2 z-20 hidden -translate-x-1/2 items-center gap-3 text-xs font-semibold uppercase tracking-[0.32em] text-white/45 md:flex">
         <span className="h-px w-12 bg-white/20" />
         Scroll

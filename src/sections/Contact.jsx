@@ -20,20 +20,20 @@ export default function Contact() {
     <section id="contact" className="section-wrap contact-section pb-12">
       <div className="mx-auto max-w-6xl px-5 sm:px-6 lg:px-8">
         <Reveal>
-          <div className="contact-shell relative overflow-hidden p-7 sm:p-10 lg:p-14">
-            <div className="absolute right-0 top-0 h-64 w-64 translate-x-1/3 -translate-y-1/3 rounded-full bg-violet-aura/30 blur-3xl" />
-            <div className="relative grid gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
+          <div className="contact-shell relative overflow-hidden p-6 sm:p-8 lg:p-10">
+            <div className="absolute right-0 top-0 h-48 w-48 translate-x-1/3 -translate-y-1/3 rounded-full bg-violet-aura/24 blur-3xl" />
+            <div className="relative grid gap-8 lg:grid-cols-[1fr_0.82fr] lg:items-center">
               <div>
-                <p className="motion-item mb-4 text-xs font-semibold uppercase tracking-[0.42em] text-violet-aura">Contact</p>
-                <h2 className="motion-item max-w-3xl font-display text-4xl font-bold leading-tight text-frost sm:text-6xl" style={{ "--item-delay": "100ms" }}>
-                  Let&apos;s turn your next visual idea into something magnetic.
+                <p className="motion-item mb-3 text-xs font-semibold uppercase tracking-[0.38em] text-violet-aura">Contact</p>
+                <h2 className="motion-item max-w-2xl font-display text-3xl font-bold leading-tight text-frost sm:text-5xl" style={{ "--item-delay": "100ms" }}>
+                  Ready to build something sharp?
                 </h2>
-                <p className="motion-item mt-6 max-w-2xl text-lg leading-8 text-white/64" style={{ "--item-delay": "200ms" }}>
-                  Available for graphics design work, creative direction experiments, and future web-based portfolio showcases.
+                <p className="motion-item mt-4 max-w-xl text-base leading-7 text-white/64 sm:text-lg" style={{ "--item-delay": "200ms" }}>
+                  Graphics, branding, and portfolio visuals. Send a brief or say hello.
                 </p>
               </div>
               <div className="contact-actions grid gap-3">
-                <a href="mailto:ayonr169@gmail.com" className="motion-item group inline-flex items-center justify-center gap-3 rounded-full bg-frost px-7 py-4 text-sm font-extrabold uppercase tracking-[0.18em] text-night transition hover:bg-white" style={{ "--item-delay": "260ms" }}>
+                <a href="mailto:ayonr169@gmail.com" className="motion-item group inline-flex items-center justify-center gap-3 rounded-full bg-frost px-6 py-3.5 text-sm font-extrabold uppercase tracking-[0.16em] text-night transition hover:bg-white" style={{ "--item-delay": "260ms" }}>
                   <Mail className="h-4 w-4" />
                   Start a Project
                   <ArrowUpRight className="h-4 w-4 transition group-hover:translate-x-1 group-hover:-translate-y-1" />
